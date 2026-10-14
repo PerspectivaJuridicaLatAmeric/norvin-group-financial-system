@@ -44,5 +44,36 @@ export const moduleConfigs = {
       { key: "category", label: "Category" },
       { key: "vendor", label: "Vendor" }
     ]
+  },
+  employees: {
+    title: "Employees",
+    fields: [
+      { key: "name", label: "Employee name", required: true },
+      { key: "email", label: "Email", type: "email" },
+      { key: "phone", label: "Phone" },
+      { key: "pay_rate", label: "Pay rate", type: "number" },
+      { key: "pay_type", label: "Pay type" },
+      { key: "status", label: "Status" }
+    ]
+  },
+  contractors: {
+    title: "Contractors",
+    fields: [
+      { key: "name", label: "Contractor name", required: true },
+      { key: "email", label: "Email", type: "email" },
+      { key: "phone", label: "Phone" },
+      { key: "business_name", label: "Business name" },
+      { key: "status", label: "Status" }
+    ]
+  },
+  contractor_payments: {
+    title: "Contractor Payments",
+    fields: [
+      { key: "contractor_id", label: "Contractor ID", required: true },
+      { key: "amount", label: "Amount", type: "number", required: true },
+      { key: "payment_date", label: "Payment date", type: "date" },
+      { key: "method", label: "Method" },
+      { key: "description", label: "Description" }
+    ]
   }
 };
