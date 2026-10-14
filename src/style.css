@@ -236,3 +236,12 @@ iframe[src*="netlify"],iframe[title*="Netlify"],iframe[id*="netlify"],iframe[cla
  .print-sheet footer{margin:9px -17px -12px!important;padding:8px 17px!important}
  .print-sheet .document-items .item-head,.print-sheet .document-amount,.print-sheet .document-meta,.print-sheet .document-party,.print-sheet .estimate-approval-block,.print-sheet footer{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
 }
+
+
+/* Approved layout: seal directly next to the signature, not at the far right edge. */
+.print-sheet .estimate-approval-block{display:grid!important;grid-template-columns:minmax(0,250px) 110px!important;justify-content:start!important;align-items:center!important;column-gap:12px!important;row-gap:0!important}
+.print-sheet .estimate-approval-signature{width:100%!important;max-width:250px!important;grid-column:1!important}
+.print-sheet .estimate-approval-seal{grid-column:2!important;justify-self:start!important;align-self:center!important;width:110px!important}
+.print-sheet .estimate-approval-seal img{width:100px!important;height:100px!important}
+@media(max-width:600px){.print-sheet .estimate-approval-block{grid-template-columns:minmax(0,1fr) 92px!important;column-gap:8px!important}.print-sheet .estimate-approval-seal{width:92px!important}.print-sheet .estimate-approval-seal img{width:82px!important;height:82px!important}}
+@media print{.print-sheet .estimate-approval-block{grid-template-columns:2.35in 1in!important;justify-content:start!important;column-gap:.12in!important}.print-sheet .estimate-approval-seal{width:1in!important}.print-sheet .estimate-approval-seal img{width:.86in!important;height:.86in!important}}
