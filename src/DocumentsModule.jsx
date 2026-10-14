@@ -120,6 +120,7 @@ export default function DocumentsModule({supabase,initialType="estimate",initial
   }
   async function attachInvoiceEmail(){
     if(type!=="invoice")return;
+    if(!sourceId){setError("Save the invoice before sending it.");return;}
     if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailTo.trim())){setError("Enter a valid email address.");return;}
     setEmailSending(true);setError("");setSavedMessage("");
     try{
@@ -127,20 +128,18 @@ export default function DocumentsModule({supabase,initialType="estimate",initial
       if(!sheet)throw new Error("Invoice preview unavailable.");
       const {default:html2pdf}=await import("html2pdf.js");
       const blob=await html2pdf().set({margin:0,filename:(documentNumber||"invoice")+".pdf",html2canvas:{scale:2,useCORS:true},jsPDF:{unit:"in",format:"letter",orientation:"portrait"}}).from(sheet).outputPdf("blob");
-      const filename=(documentNumber||"invoice")+".pdf";
-      const file=new File([blob],filename,{type:"application/pdf"});
-      const subject="NORVIN GROUP LLC - Invoice "+documentNumber;
-      const body="Please find the invoice attached.";
-      if(navigator.canShare&&navigator.canShare({files:[file]})&&navigator.share){
-        await navigator.share({files:[file],title:subject,text:body});
-        setSavedMessage("Sharing opened. You decide whether to send the message.");
-      }else{
-        const url=URL.createObjectURL(blob);
-        const link=document.createElement("a");link.href=url;link.download=filename;link.click();
-        window.setTimeout(()=>URL.revokeObjectURL(url),60000);
-        window.location.href="mailto:"+encodeURIComponent(emailTo.trim())+"?subject="+encodeURIComponent(subject)+"&body="+encodeURIComponent(body+" Attach the downloaded PDF: "+filename);
-        setSavedMessage("PDF downloaded and email draft opened. Attach the PDF manually, then decide whether to send.");
-      }
+      if(!sourceId)throw new Error("Save the invoice before sending it.");
+      const bytes=new Uint8Array(await blob.arrayBuffer());
+      let binary="";
+      for(let i=0;i<bytes.length;i+=8192)binary+=String.fromCharCode(...bytes.subarray(i,i+8192));
+      const pdf_base64=btoa(binary);
+      const {data,error:sendError}=await supabase.functions.invoke("send-invoice-email",{
+        body:{invoice_id:String(sourceId),to:emailTo.trim(),pdf_base64}
+      });
+      if(sendError)throw new Error(data?.error||sendError.message||"Email delivery failed.");
+      if(!data?.sent)throw new Error(data?.error||"The email service did not confirm the send.");
+      setSavedMessage("Factura enviada correctamente a "+emailTo.trim()+".");
+
     }catch(e){if(e?.name!=="AbortError")setError(e.message||"Unable to prepare invoice email.");}
     finally{setEmailSending(false);}
   }
@@ -182,7 +181,7 @@ export default function DocumentsModule({supabase,initialType="estimate",initial
       <div className="formactions"><button type="button" onClick={saveDocument} disabled={saving}>{saving?"Saving…":sourceId?"Update Record":"Save / Register"}</button><button className="primary" type="button" onClick={printDocument}>Print / Save PDF</button></div>
     </div>}
     {onClose&&<div className="formactions no-print"><button className="primary" type="button" onClick={printDocument}>Print / Save PDF</button>{type==="invoice"&&<button type="button" onClick={()=>setEmailOpen(v=>!v)}>Attach to Email</button>}</div>}
-    {type==="invoice"&&emailOpen&&<div className="no-print npi-email-form"><label>Recipient email<input type="email" value={emailTo} onChange={e=>setEmailTo(e.target.value)} placeholder="customer@example.com" autoComplete="email"/></label><button type="button" disabled={emailSending} onClick={attachInvoiceEmail}>{emailSending?"Preparing PDF…":"Enviar"}</button><p>Nothing is sent automatically. You review and send the email yourself. On some devices you may need to attach the downloaded PDF manually.</p></div>}
+    {type==="invoice"&&emailOpen&&<div className="no-print npi-email-form"><label>Recipient email<input type="email" value={emailTo} onChange={e=>setEmailTo(e.target.value)} placeholder="customer@example.com" autoComplete="email"/></label><button type="button" disabled={emailSending} onClick={attachInvoiceEmail}>{emailSending?"Enviando…":"Enviar"}</button><p>The PDF invoice is sent to the entered email address when you press Enviar.</p></div>}
     {savedMessage&&onClose&&<div className="notice no-print" role="status">{savedMessage}</div>}
     {error&&onClose&&<div className="alert no-print" role="alert">{error}</div>}
     <article className={`print-sheet ${type==="estimate"?"norvin-premium-estimate":type==="invoice"?"norvin-premium-invoice":""}`}>
