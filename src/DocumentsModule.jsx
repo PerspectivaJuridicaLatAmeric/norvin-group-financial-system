@@ -37,8 +37,8 @@ export default function DocumentsModule({supabase}){
         const paymentReq=type==="invoice"?supabase.from("payments").select("*").limit(500):Promise.resolve({data:[],error:null});
         const [cr,jr,sr,pr]=await Promise.all([clientReq,projectReq,sourceReq,paymentReq]);
         if(!active)return;
-        if(cr.error)throw cr.error;if(sr.error)throw sr.error;if(pr.error)throw pr.error;
-        setClients(cr.data||[]);setSourceRows(sr.data||[]);setPayments(pr.data||[]);
+        if(cr.error)throw cr.error;if(jr.error)throw jr.error;if(sr.error)throw sr.error;if(pr.error)throw pr.error;
+        setClients(cr.data||[]);setProjects(jr.data||[]);setSourceRows(sr.data||[]);setPayments(pr.data||[]);
       }catch(e){if(active)setError(e.message||"Unable to load saved records.");}
       finally{if(active)setSourceLoading(false);}
     } load(); return()=>{active=false};
@@ -52,6 +52,9 @@ export default function DocumentsModule({supabase}){
     if(type==="expense-report"){setNumber(r.expense_number||String(r.id).slice(0,8));setName(r.vendor||"");setAmount(r.amount??"");setDate((r.expense_date||new Date().toISOString().slice(0,10)).slice(0,10));setDescription(r.description||"");}
   }
   const selectedSource=sourceRows.find(x=>String(x.id)===String(sourceId));
+  const showLineItems=["invoice","estimate","purchase-order"].includes(type);
+  const lineTotal=showLineItems&&rate!=="" ? Math.max(0,Number(qty)||0)*Math.max(0,Number(rate)||0) : null;
+  const displayAmount=lineTotal!==null&&Number.isFinite(lineTotal)?lineTotal:(amount!==""&&Number.isFinite(Number(amount))?Number(amount):0);
   const invoicePayments=type==="invoice"&&selectedSource?payments.filter(p=>String(p.invoice_id)===String(selectedSource.id)): [];
   const paidTotal=invoicePayments.reduce((s,p)=>s+(Number(p.amount)||0),0);
   const balanceDue=Math.max(0,displayAmount-paidTotal);
@@ -64,9 +67,6 @@ export default function DocumentsModule({supabase}){
   const label=TYPES.find(([key])=>key===type)?.[1] || "Document";
   const partyLabel=type==="invoice"||type==="estimate"?"Bill To":type==="purchase-order"?"Vendor":type==="payroll-statement"?"Employee":"Payee";
   const amountLabel=type==="invoice"?"Amount Due":type==="estimate"?"Estimated Total":type==="purchase-order"?"Order Total":type==="payroll-statement"?"Gross Amount":"Expense Total";
-  const showLineItems=["invoice","estimate","purchase-order"].includes(type);
-  const lineTotal=showLineItems&&rate!=="" ? Math.max(0,Number(qty)||0)*Math.max(0,Number(rate)||0) : null;
-  const displayAmount=lineTotal!==null&&Number.isFinite(lineTotal)?lineTotal:(amount!==""&&Number.isFinite(Number(amount))?Number(amount):0);
   return <section className="document-module">
     <div className="toolbar"><div><strong>Documents</strong><div className="muted">PRINTABLE BUSINESS DOCUMENTS</div></div></div>
     <div className="formgrid no-print">
