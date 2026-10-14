@@ -20,10 +20,13 @@ export const moduleConfigs = {
     title: "Invoices",
     fields: [
       { key: "invoice_number", label: "Invoice number", required: true },
-      { key: "client_id", label: "Client ID" },
-      { key: "amount", label: "Amount", type: "number", min: 0, step: "0.01", required: true },
-      { key: "status", label: "Status" },
-      { key: "due_date", label: "Due date", type: "date" }
+      { key: "client_id", label: "Client", required: true },
+      { key: "project_id", label: "Project" },
+      { key: "issue_date", label: "Issue date", type: "date" },
+      { key: "due_date", label: "Due date", type: "date" },
+      { key: "amount", label: "Invoice total ($)", type: "number", min: 0, step: "0.01", required: true },
+      { key: "status", label: "Internal status", type: "select", options: [{value:"Draft",label:"Draft"},{value:"Issued",label:"Issued"},{value:"Paid",label:"Paid"},{value:"Cancelled",label:"Cancelled"}] },
+      { key: "notes", label: "Notes" }
     ]
   },
   payments: {
