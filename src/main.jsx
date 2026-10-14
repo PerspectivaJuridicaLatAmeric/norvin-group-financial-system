@@ -12,6 +12,7 @@ import CrudModule from "./CrudModule.jsx";
 import DocumentsModule from "./DocumentsModule.jsx";
 import ReportsModule from "./ReportsModule.jsx";
 import { moduleConfigs } from "./moduleConfigs.js";
+import EmployeePayrollProfile from "./EmployeePayrollProfile.jsx";
 
 const modules = [
   ["dashboard","Dashboard"],["clients","Clients"],["projects","Projects"],["estimates","Estimates"],
@@ -121,6 +122,15 @@ function PayrollModule({rows,error}){
   const [multipleJobs,setMultipleJobs]=useState(false);
   const [payDate,setPayDate]=useState("2026-10-14");
   const [it4Exemptions,setIt4Exemptions]=useState("");
+  const [employee,setEmployee]=useState(null);
+  function selectEmployee(e){
+    setEmployee(e);
+    if(!e)return;
+    if(e.pay_frequency)setFrequency(e.pay_frequency);
+    if(e.federal_filing_status)setFilingStatus(e.federal_filing_status);
+    setMultipleJobs(Boolean(e.federal_multiple_jobs));
+    if(e.ohio_it4_exemptions!==null&&e.ohio_it4_exemptions!==undefined)setIt4Exemptions(String(e.ohio_it4_exemptions));
+  }
   let result=null, federalPreview=null, ohioPreview=null, calcError="";
   if(gross!==""){
     try{result=calculateFica2026({grossPay:gross,socialSecurityYtd:ssYtd,medicareYtd:medYtd});
@@ -136,6 +146,8 @@ function PayrollModule({rows,error}){
       {!readiness.ready && <div className="alert">Live payroll is blocked: federal, Ohio, school district and municipal withholding are not fully verified. This screen is a preview only.</div>}
       <p className="muted">Rule year: 2026 · Verified sources tracked: {Object.keys(WITHHOLDING_SOURCES_2026).length} · Missing production requirements: {readiness.missing.length}</p>
       <p>Enter current gross pay and prior year-to-date Social Security and Medicare taxable wages for this employee. This is a calculation preview, not a payroll payment or saved record.</p>
+      <EmployeePayrollProfile supabase={supabase} onSelect={selectEmployee}/>
+      {employee&&<div className="notice">Tax profile loaded for {employee.first_name} {employee.last_name}. Work municipality: {employee.work_municipality||"missing"} · Residence municipality: {employee.residence_municipality||"missing"} · School district: {employee.school_district_code||"missing"}.</div>}
       <div className="formgrid">
         <label>Gross pay ($)<input type="number" min="0" step="0.01" value={gross} onChange={e=>setGross(e.target.value)}/></label>
         <label>Prior Social Security wages YTD ($)<input type="number" min="0" step="0.01" value={ssYtd} onChange={e=>setSsYtd(e.target.value)}/></label>
