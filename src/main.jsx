@@ -34,10 +34,11 @@ function App(){
   const [rows,setRows]=useState([]);
   const [error,setError]=useState("");
   const [recordsLoading,setRecordsLoading]=useState(false);
+  const [authError,setAuthError]=useState("");
 
   useEffect(()=>{
     if(!supabase){ setLoading(false); return; }
-    supabase.auth.getSession().then(({data,error})=>{setSession(data?.session||null);if(error)setError(error.message);}).catch(e=>setError(e.message)).finally(()=>setLoading(false));
+    supabase.auth.getSession().then(({data,error})=>{setSession(data?.session||null);if(error)setAuthError(error.message);}).catch(e=>setAuthError(e.message)).finally(()=>setLoading(false));
     const {data:listener}=supabase.auth.onAuthStateChange((_event,next)=>setSession(next));
     return ()=>listener.subscription.unsubscribe();
   },[]);
@@ -68,7 +69,7 @@ function App(){
     <div className="notice">Supabase environment variables are not configured on this deployment. Add the project URL and publishable key to enable secure sign-in and company data.</div>
   </div></div>;
 
-  if(!session) return <Login />;
+  if(!session) return <><Login />{authError&&<div className="alert" role="alert">Authentication initialization error: {authError}</div>}</>;
 
   return <div className="layout">
     <aside>
