@@ -39,7 +39,7 @@ export default function DocumentsModule({supabase}){
         const paymentReq=type==="invoice"?supabase.from("payments").select("*").limit(500):Promise.resolve({data:[],error:null});
         const [cr,jr,sr,pr]=await Promise.all([clientReq,projectReq,sourceReq,paymentReq]);
         if(!active)return;
-        if(cr.error)throw cr.error;if(jr.error)throw jr.error;if(sr.error)throw sr.error;if(pr.error)throw pr.error;
+        if(cr.error)throw cr.error;if(sr.error)throw sr.error;if(pr.error)throw pr.error;
         setClients(cr.data||[]);setProjects(jr.data||[]);setSourceRows(sr.data||[]);setPayments(pr.data||[]);
       }catch(e){if(active)setError(e.message||"Unable to load saved records.");}
       finally{if(active)setSourceLoading(false);}
