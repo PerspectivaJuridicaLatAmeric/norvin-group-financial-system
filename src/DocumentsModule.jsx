@@ -25,6 +25,8 @@ export default function DocumentsModule({supabase}){
   const [description,setDescription]=React.useState("");
   const [qty,setQty]=React.useState("1");
   const [rate,setRate]=React.useState("");
+  const [items,setItems]=React.useState([]);
+  const [taxRate,setTaxRate]=React.useState("0");
   const [error,setError]=React.useState("");
   const [sourceRows,setSourceRows]=React.useState([]);
   const [clients,setClients]=React.useState([]);
@@ -64,15 +66,17 @@ export default function DocumentsModule({supabase}){
   }
   const selectedSource=sourceRows.find(x=>String(x.id)===String(sourceId));
   const showLineItems=["invoice","estimate","purchase-order"].includes(type);
-  const lineTotal=showLineItems&&rate!=="" ? Math.max(0,Number(qty)||0)*Math.max(0,Number(rate)||0) : null;
-  const displayAmount=lineTotal!==null&&Number.isFinite(lineTotal)?lineTotal:(amount!==""&&Number.isFinite(Number(amount))?Number(amount):0);
+  const currentLine=showLineItems&&rate!=="" ? Math.max(0,Number(qty)||0)*Math.max(0,Number(rate)||0) : null;
+  const lineTotal=items.length ? items.reduce((sum,item)=>sum+item.qty*item.rate,0)+(currentLine||0) : currentLine;
+  const salesTax=showLineItems&&lineTotal!==null?lineTotal*Math.max(0,Number(taxRate)||0)/100:0;
+  const displayAmount=lineTotal!==null&&Number.isFinite(lineTotal)?lineTotal+salesTax:(amount!==""&&Number.isFinite(Number(amount))?Number(amount):0);
   const invoicePayments=type==="invoice"&&selectedSource?payments.filter(p=>String(p.invoice_id)===String(selectedSource.id)): [];
   const paidTotal=invoicePayments.reduce((s,p)=>s+(Number(p.amount)||0),0);
   const balanceDue=Math.max(0,displayAmount-paidTotal);
   const validAmount=amount!==""&&Number.isFinite(Number(amount))&&Number(amount)>=0;
   async function saveDocument(){
     if(!supabase)return;
-    const calculatedOk=showLineItems&&rate!==""&&Number.isFinite(Number(rate))&&Number(rate)>=0&&Number(qty)>0;
+    const calculatedOk=showLineItems&&(items.length>0||(rate!==""&&Number.isFinite(Number(rate))&&Number(rate)>=0&&Number(qty)>0));
     if(!number.trim()||!name.trim()||!date||(!validAmount&&!calculatedOk)){setError("Enter a document number, recipient, valid date and amount.");return;}
     const table=type==="invoice"?"invoices":type==="estimate"?"estimates":type==="expense-report"?"expenses":null;
     if(!table){setError("Saving this document type will be enabled with its dedicated register.");return;}
@@ -90,7 +94,7 @@ export default function DocumentsModule({supabase}){
     }catch(e){setError(e.message||"Unable to register document.");}finally{setSaving(false);}
   }
   function printDocument(){
-    const calculatedOk=["invoice","estimate","purchase-order"].includes(type)&&rate!==""&&Number.isFinite(Number(rate))&&Number(rate)>=0&&Number(qty)>0;
+    const calculatedOk=["invoice","estimate","purchase-order"].includes(type)&&(items.length>0||(rate!==""&&Number.isFinite(Number(rate))&&Number(rate)>=0&&Number(qty)>0));
     if(!number.trim()||!name.trim()||!date||(!validAmount&&!calculatedOk)){setError("Enter a document number, recipient, valid date and a valid amount or line-item rate.");return;}
     setError("");window.print();
   }
@@ -106,6 +110,7 @@ export default function DocumentsModule({supabase}){
       <label>{partyLabel}<input value={name} onChange={e=>setName(e.target.value)}/></label>
       <label>Address<input value={address} onChange={e=>setAddress(e.target.value)} placeholder="Street, city, state, ZIP"/></label>
       {showLineItems&&<><label className="wide">Service / Item<input value={description} onChange={e=>setDescription(e.target.value)} placeholder="Description of work or service"/></label><label>Quantity<input type="number" min="0" step="1" value={qty} onChange={e=>setQty(e.target.value)}/></label><label>Rate<input type="number" min="0" step="0.01" value={rate} onChange={e=>setRate(e.target.value)}/></label></>}
+      {showLineItems&&<><label>Tax rate (%)<input type="number" min="0" max="100" step="0.01" value={taxRate} onChange={e=>setTaxRate(e.target.value)}/></label><div className="wide"><button type="button" onClick={()=>{if(!description.trim()||!(Number(qty)>0)||rate===""||!(Number(rate)>=0)){setError("Enter a description, quantity and rate first.");return;}setItems(v=>[...v,{description:description.trim(),qty:Number(qty),rate:Number(rate)}]);setDescription("");setQty("1");setRate("");setError("");}}>+ Add line item</button>{items.length>0&&<div className="document-line-editor">{items.map((item,i)=><div key={i}><span>{item.description} · {item.qty} × {item.rate.toFixed(2)}</span><button type="button" onClick={()=>setItems(v=>v.filter((_,j)=>i!==j))}>Remove</button></div>)}</div>}</div></>}
       <label>Amount<input type="number" step="0.01" value={amount} onChange={e=>setAmount(e.target.value)} placeholder={showLineItems?"Fallback total":"0.00"}/></label>
       <label>Date<input type="date" value={date} onChange={e=>setDate(e.target.value)}/></label>
       <label>Reference / Project<input value={reference} onChange={e=>setReference(e.target.value)} placeholder="Project or work order reference"/></label>
@@ -135,7 +140,8 @@ export default function DocumentsModule({supabase}){
       {reference&&<div className="document-reference"><span>PROJECT / REFERENCE</span><strong>{reference}</strong></div>}
       {reference&&<div className="document-reference"><small>PROJECT / REFERENCE</small><strong>{reference}</strong></div>}
       <div className="document-party"><small>{partyLabel.toUpperCase()}</small><strong>{name||"—"}</strong>{address&&<span>{address}</span>}</div>
-      {showLineItems&&<div className="document-items"><div className="item-head"><span>Description</span><span>Qty</span><span>Rate</span><span>Amount</span></div><div className="item-row"><strong>{description||"Service / project work"}</strong><span>{qty||"—"}</span><span>{rate!==""?new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"}).format(Number(rate)||0):"—"}</span><strong>{lineTotal!==null?new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"}).format(lineTotal):"—"}</strong></div></div>}
+      {showLineItems&&<div className="document-items"><div className="item-head"><span>Description</span><span>Qty</span><span>Rate</span><span>Amount</span></div>{[...items,...(description.trim()&&currentLine!==null?[{description,qty:Number(qty),rate:Number(rate)}]:[])].map((item,i)=><div className="item-row" key={i}><strong>{item.description}</strong><span>{item.qty}</span><span>{new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"}).format(item.rate)}</span><strong>{new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"}).format(item.qty*item.rate)}</strong></div>)}{items.length===0&&currentLine===null&&<div className="item-row"><strong>{description||"Service / project work"}</strong><span>—</span><span>—</span><strong>—</strong></div>}</div>}
+      {showLineItems&&lineTotal!==null&&<div className="document-totals"><div><span>Subtotal</span><strong>{new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"}).format(lineTotal)}</strong></div><div><span>Tax ({taxRate||0}%)</span><strong>{new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"}).format(salesTax)}</strong></div></div>}
       <div className="document-amount"><span>{amountLabel}</span><strong>{new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"}).format(displayAmount)}</strong></div>
       {type==="invoice"&&sourceId&&<div className="invoice-balance"><div><span>Payments Received</span><strong>{new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"}).format(paidTotal)}</strong></div><div><span>Balance Due</span><strong>{new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"}).format(balanceDue)}</strong></div></div>}
       {terms.trim()&&<div className="document-terms"><strong>TERMS &amp; INSTRUCTIONS</strong><p>{terms}</p></div>}
