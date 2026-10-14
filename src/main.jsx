@@ -36,7 +36,7 @@ function App(){
 
   useEffect(()=>{
     if(!supabase){ setLoading(false); return; }
-    supabase.auth.getSession().then(({data})=>{setSession(data.session);setLoading(false)});
+    supabase.auth.getSession().then(({data,error})=>{setSession(data?.session||null);if(error)setError(error.message);}).catch(e=>setError(e.message)).finally(()=>setLoading(false));
     const {data:listener}=supabase.auth.onAuthStateChange((_event,next)=>setSession(next));
     return ()=>listener.subscription.unsubscribe();
   },[]);
@@ -122,7 +122,7 @@ function PayrollModule({rows,error}){
   const [frequency,setFrequency]=useState("weekly");
   const [filingStatus,setFilingStatus]=useState("single");
   const [multipleJobs,setMultipleJobs]=useState(false);
-  const [payDate,setPayDate]=useState(()=>new Date().toLocaleDateString("en-CA"));
+  const [payDate,setPayDate]=useState(()=>{const d=new Date();return [d.getFullYear(),String(d.getMonth()+1).padStart(2,"0"),String(d.getDate()).padStart(2,"0")].join("-");});
   const [it4Exemptions,setIt4Exemptions]=useState("");
   const [employee,setEmployee]=useState(null);
   const [saveMessage,setSaveMessage]=useState("");
