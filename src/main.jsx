@@ -81,11 +81,31 @@ function Dashboard({setSection}){
 
 function DataModule({title,rows,error}){
   const columns=rows.length?Object.keys(rows[0]):[];
+  if(title==="Payroll") return <PayrollModule rows={rows} error={error}/>;
   return <section><div className="toolbar"><div><strong>{title}</strong><div className="muted">{rows.length} RECORDS</div></div></div>
     {error?<div className="alert">Unable to load this module: {error}</div>:
     <div className="tablewrap">{!rows.length?<div className="empty">No records found.</div>:
       <table><thead><tr>{columns.map(c=><th key={c}>{c.replaceAll("_"," ")}</th>)}</tr></thead>
       <tbody>{rows.map((r,i)=><tr key={r.id??i}>{columns.map(c=><td key={c}>{r[c]===null?"":typeof r[c]==="object"?JSON.stringify(r[c]):String(r[c])}</td>)}</tr>)}</tbody></table>}</div>}
+  </section>
+}
+
+function PayrollModule({rows,error}){
+  return <section>
+    <div className="toolbar"><div><strong>Payroll</strong><div className="muted">{rows.length} PAYROLL RECORDS</div></div></div>
+    <div className="welcome">
+      <h2>Payroll withholding engine</h2>
+      <p>Payroll will calculate employee withholdings from gross pay and employee tax elections. The calculation layer is intentionally separated from the user interface so federal, Social Security, Medicare, Ohio, and applicable local rules can be updated without rewriting payroll records.</p>
+      <div className="grid">
+        <div className="tile"><strong>Gross Pay</strong><span>Hours, rate or salary</span></div>
+        <div className="tile"><strong>Employee Withholdings</strong><span>Federal, Social Security, Medicare, state and applicable local tax</span></div>
+        <div className="tile"><strong>Employer Taxes</strong><span>Tracked separately from employee deductions</span></div>
+        <div className="tile"><strong>Net Pay</strong><span>Gross pay minus employee deductions</span></div>
+      </div>
+    </div>
+    {error?<div className="alert">Unable to load payroll records: {error}</div>:
+      <div className="tablewrap" style={{marginTop:18}}>{!rows.length?<div className="empty">No payroll records found.</div>:<div className="empty">{rows.length} payroll records loaded.</div>}</div>}
+    <p className="footnote">Tax rules and employee elections must be validated before payroll is used for live payments. Contractor payments remain separate from employee payroll.</p>
   </section>
 }
 
