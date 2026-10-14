@@ -15,6 +15,7 @@ export default function DocumentsModule({supabase}){
   const [amount,setAmount]=React.useState("");
   const [date,setDate]=React.useState(new Date().toISOString().slice(0,10));
   const [notes,setNotes]=React.useState("");
+  const [paymentStatus,setPaymentStatus]=React.useState("pending");
   const [terms,setTerms]=React.useState("Payment terms as agreed in writing.");
   const [reference,setReference]=React.useState("");
   const [contact,setContact]=React.useState("");
@@ -116,6 +117,7 @@ export default function DocumentsModule({supabase}){
       <label>Reference / Project<input value={reference} onChange={e=>setReference(e.target.value)} placeholder="Project or work order reference"/></label>
       <label>Document status<select value={status} onChange={e=>setStatus(e.target.value)}><option>Draft</option><option>Issued</option><option>Approved</option><option>Paid</option></select></label>
       <label className="wide">Terms / Conditions<textarea rows="2" value={terms} onChange={e=>setTerms(e.target.value)}/></label>
+      {type==="invoice"&&<label>Payment status<select value={paymentStatus} onChange={e=>setPaymentStatus(e.target.value)}><option value="pending">Pending Payment</option><option value="partial">Partially Paid</option><option value="paid">Paid</option><option value="cancelled">Cancelled</option></select></label>}
       <label>Project / Reference<input value={reference} onChange={e=>setReference(e.target.value)} placeholder="Project or purchase reference"/></label>
       <label>Business contact<input value={contact} onChange={e=>setContact(e.target.value)} placeholder="Company phone or email"/></label>
       <label className="wide">Terms / Instructions<textarea rows="2" value={terms} onChange={e=>setTerms(e.target.value)}/></label>
@@ -131,6 +133,7 @@ export default function DocumentsModule({supabase}){
         <img className="document-logo" src="/norvin-logo-web.jpg" alt="NORVIN GROUP LLC"/>
         <div className="document-title"><h2>{label}</h2></div>
       </header>
+      {type==="invoice"&&<div className={"invoice-stamp stamp-"+paymentStatus} aria-label={"Invoice status: "+paymentStatus}>{paymentStatus==="paid"?"PAID":paymentStatus==="partial"?"PARTIALLY PAID":paymentStatus==="cancelled"?"CANCELLED":"PENDING PAYMENT"}</div>}
       <div className="document-meta">
         <div><small>DOCUMENT #</small><strong>{number||"—"}</strong></div>
         <div><small>DATE</small><strong>{date}</strong></div>
