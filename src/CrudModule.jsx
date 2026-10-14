@@ -11,6 +11,9 @@ export default function CrudModule({ supabase, table, config, initialRows = [], 
   const [documentAction,setDocumentAction]=useState(null);
   const [clientOptions,setClientOptions]=useState([]);
   const [projectOptions,setProjectOptions]=useState([]);
+  const [estimateItems,setEstimateItems]=useState([{description:"",quantity:1,price:""}]);
+  const estimateTotal=estimateItems.reduce((sum,item)=>sum+(Number(item.quantity)||0)*(Number(item.price)||0),0);
+  const updateItem=(index,key,value)=>setEstimateItems(items=>items.map((item,i)=>i===index?{...item,[key]:value}:item));
   useEffect(()=>{if(table!=="estimates")return;let active=true;Promise.all([supabase.from("clients").select("id,name,client_sequence").limit(500),supabase.from("projects").select("id,name,project_sequence,client_id").limit(500)]).then(([c,p])=>{if(active){setClientOptions(c.data||[]);setProjectOptions(p.data||[]);}});return()=>{active=false};},[supabase,table]);
   const isFinancialDocument=table==="invoices"||table==="estimates";
   const isClients=table==="clients";
@@ -22,7 +25,7 @@ export default function CrudModule({ supabase, table, config, initialRows = [], 
 
   useEffect(() => setRows(initialRows), [initialRows]);
   const estimateValidity=(days)=>{const date=new Date();date.setHours(12,0,0,0);date.setDate(date.getDate()+days);return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,"0")}-${String(date.getDate()).padStart(2,"0")}`;};
-  function updateField(field,value){setForm(current=>{const next={...current,[field.key]:value};if(table==="estimates"&&field.key==="service_type"){const days=field.options.find(o=>o.value===value)?.days;if(days)next.valid_until=estimateValidity(days);}return next;});}
+  function updateField(field,value){setForm(current=>{const next={...current,[field.key]:value};if(table==="estimates"&&field.key==="client_id")next.project_id="";if(table==="estimates"&&field.key==="service_type"){const days=field.options.find(o=>o.value===value)?.days;if(days)next.valid_until=estimateValidity(days);}return next;});}
 
   async function reload() {
     const { data, error } = await supabase.from(table).select("*").limit(100);
@@ -36,7 +39,7 @@ export default function CrudModule({ supabase, table, config, initialRows = [], 
     if(busy)return;
     setBusy(true);
     const payload = Object.fromEntries(Object.entries(form).filter(([, value]) => value !== ""));
-    if(isEstimates&&!editingId){const year=new Date().getFullYear();const numbers=rows.map(r=>Number(String(r.estimate_number||"").match(new RegExp("^EST-"+year+"-(\\\\d+)$"))?.[1]||0));payload.estimate_number="EST-"+year+"-"+String(Math.max(0,...numbers)+1).padStart(5,"0");}
+    if(isEstimates){if(!payload.client_id){setMessage("Select a registered client.");setBusy(false);return;}if(!estimateItems.some(item=>item.description.trim()&&Number(item.quantity)>0&&Number(item.price)>=0&&item.price!=="")){setMessage("Add at least one service with description, quantity and price.");setBusy(false);return;}payload.line_items=estimateItems.filter(item=>item.description.trim()).map(item=>({description:item.description.trim(),quantity:Number(item.quantity),price:Number(item.price)}));payload.amount=estimateTotal;delete payload.estimate_number;delete payload.project_id;if(form.project_id)payload.project_id=form.project_id;else payload.project_id=null;}
     for(const field of config.fields){
       if(field.type==="number" && payload[field.key]!==undefined){
         const value=Number(payload[field.key]);
@@ -57,6 +60,7 @@ export default function CrudModule({ supabase, table, config, initialRows = [], 
     if (error) throw error;
     await reload();
     setForm(empty);
+    if(isEstimates)setEstimateItems([{description:"",quantity:1,price:""}]);
     setEditingId(null);
     setMessage(editingId ? "Record updated." : "Record created.");
     } catch(err){setMessage(err.message||"Unable to save record.");}
@@ -65,6 +69,7 @@ export default function CrudModule({ supabase, table, config, initialRows = [], 
 
   function edit(row) {
     setEditingId(row.id);
+    if(isEstimates)setEstimateItems(Array.isArray(row.line_items)&&row.line_items.length?row.line_items:[{description:row.description||"",quantity:1,price:row.amount??""}]);
     setForm(Object.fromEntries(config.fields.map(f => [f.key, f.type === "checkbox" ? Boolean(row[f.key]) : (row[f.key] ?? "")])));
   }
 
@@ -88,10 +93,11 @@ export default function CrudModule({ supabase, table, config, initialRows = [], 
   return <section>
     <div className="toolbar"><div><strong>{config.title}</strong><div className="muted">{rows.length} RECORDS{isClients&&" · Automatic client numbering"}</div></div></div>
     <form className="formgrid" onSubmit={save}>
-      {config.fields.filter(field=>!(isEstimates&&field.key==="estimate_number")).map(field => <label key={field.key}>{field.label}
-        {isEstimates&&(field.key==="client_id"||field.key==="project_id")?<select value={form[field.key]} onChange={e=>updateField(field,e.target.value)}><option value="">Select {field.key==="client_id"?"client":"project"}…</option>{(field.key==="client_id"?clientOptions:projectOptions.filter(p=>!form.client_id||!p.client_id||String(p.client_id)===String(form.client_id))).map(item=><option key={item.id} value={item.id}>{estimateLabel(field.key,item.id)}</option>)}</select>:field.type==="select"?<select value={form[field.key]} required={field.required} onChange={e=>updateField(field,e.target.value)}><option value="">Select status…</option>{field.options.map(option=><option key={option.value} value={option.value}>{option.label}</option>)}</select>:<input type={field.type || "text"} required={field.required} min={field.min} step={field.step} {...(field.type === "checkbox" ? {checked:Boolean(form[field.key]),onChange:e=>setForm(v=>({...v,[field.key]:e.target.checked}))} : {value:form[field.key],onChange:e=>setForm(v=>({...v,[field.key]:e.target.value}))})}/>}
+      {isEstimates&&<label>Estimate number<input readOnly value={editingId?(rows.find(r=>r.id===editingId)?.estimate_number||""):"Automatically assigned on save"} /></label>}
+      {config.fields.filter(field=>!(isEstimates&&["estimate_number","amount"].includes(field.key))).map(field => <label key={field.key}>{field.label}
+        {isEstimates&&(field.key==="client_id"||field.key==="project_id")?<select value={form[field.key]} onChange={e=>updateField(field,e.target.value)}><option value="">{field.key==="client_id"?"Select registered client…":"N/A — No linked project"}</option>{(field.key==="client_id"?clientOptions:projectOptions.filter(p=>!form.client_id||!p.client_id||String(p.client_id)===String(form.client_id))).map(item=><option key={item.id} value={item.id}>{estimateLabel(field.key,item.id)}</option>)}</select>:field.type==="select"?<select value={form[field.key]} required={field.required} onChange={e=>updateField(field,e.target.value)}><option value="">Select status…</option>{field.options.map(option=><option key={option.value} value={option.value}>{option.label}</option>)}</select>:<input type={field.type || "text"} required={field.required} min={field.min} step={field.step} {...(field.type === "checkbox" ? {checked:Boolean(form[field.key]),onChange:e=>setForm(v=>({...v,[field.key]:e.target.checked}))} : {value:form[field.key],onChange:e=>setForm(v=>({...v,[field.key]:e.target.value}))})}/>}
       </label>)}
-      {isEstimates&&<div className="muted">Estimate number is assigned automatically when you save.</div>}
+      {isEstimates&&<div className="wide"><strong>Services and pricing</strong><div className="muted">Describe each service. The total is calculated automatically.</div>{estimateItems.map((item,index)=><div key={index} className="formgrid"><label className="wide">Service description<textarea rows={2} value={item.description} onChange={e=>updateItem(index,"description",e.target.value)} placeholder="Describe the work to be performed"/></label><label>Quantity<input type="number" min="0.01" step="0.01" value={item.quantity} onChange={e=>updateItem(index,"quantity",e.target.value)}/></label><label>Unit price ($)<input type="number" min="0" step="0.01" value={item.price} onChange={e=>updateItem(index,"price",e.target.value)}/></label><label>Line total<input readOnly value={((Number(item.quantity)||0)*(Number(item.price)||0)).toFixed(2)}/></label><button type="button" disabled={estimateItems.length===1} onClick={()=>setEstimateItems(items=>items.filter((_,i)=>i!==index))}>Remove line</button></div>)}<button type="button" onClick={()=>setEstimateItems(items=>[...items,{description:"",quantity:1,price:""}])}>+ Add service</button><p><strong>Estimated total: ${estimateTotal.toFixed(2)}</strong></p></div>}
       <div className="formactions"><button className="primary" disabled={busy}>{busy?"Saving…":editingId ? "Update" : "Add"}</button>
         {editingId && <button type="button" onClick={() => {setEditingId(null);setForm(empty)}}>Cancel</button>}
       </div>
