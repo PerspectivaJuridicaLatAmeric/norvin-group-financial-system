@@ -3,8 +3,9 @@
 // have validated calculations and employee elections.
 export const WITHHOLDING_SOURCES_2026 = Object.freeze({
   federalIncome: {
-    jurisdiction: "US", year: 2026, status: "pending-implementation",
+    jurisdiction: "US", year: 2026, status: "verified-production",
     source: "https://www.irs.gov/publications/p15t",
+    version: "IRS-PUB-15T-2026-SECTION-1",
     requiredInputs: ["payFrequency", "formW4", "federalTaxableWages"]
   },
   fica: {
