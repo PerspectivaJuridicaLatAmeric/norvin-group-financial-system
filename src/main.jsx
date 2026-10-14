@@ -33,6 +33,7 @@ function App(){
   const [loading,setLoading]=useState(Boolean(supabase));
   const [rows,setRows]=useState([]);
   const [error,setError]=useState("");
+  const [recordsLoading,setRecordsLoading]=useState(false);
 
   useEffect(()=>{
     if(!supabase){ setLoading(false); return; }
@@ -42,11 +43,19 @@ function App(){
   },[]);
 
   useEffect(()=>{
-    if(!supabase || !session || ["dashboard","documents","reports"].includes(section)){setRows([]);setError("");return;}
-    setError("");
+    let active=true;
+    if(!supabase || !session || ["dashboard","documents","reports"].includes(section)){
+      setRows([]);setError("");setRecordsLoading(false);
+      return ()=>{active=false;};
+    }
+    setRows([]);setError("");setRecordsLoading(true);
     supabase.from(section).select("*").limit(100).then(({data,error})=>{
-      if(error){setError(error.message);setRows([])} else setRows(data||[]);
-    });
+      if(!active)return;
+      if(error){setError(error.message);setRows([]);}
+      else setRows(data||[]);
+    }).catch(e=>{if(active){setError(e.message||"Unable to load records");setRows([]);}})
+      .finally(()=>{if(active)setRecordsLoading(false);});
+    return ()=>{active=false;};
   },[section,session]);
 
   const title=useMemo(()=>modules.find(([id])=>id===section)?.[1]||"Dashboard",[section]);
@@ -69,7 +78,7 @@ function App(){
     </aside>
     <main className="content">
       <header><div><div className="muted">NORVIN GROUP LLC</div><h1>{title}</h1></div><div className="email">{session.user.email}</div></header>
-      {section==="dashboard" ? <Dashboard setSection={setSection}/> : <DataModule title={title} rows={rows} error={error}/>}
+      {section==="dashboard" ? <Dashboard setSection={setSection}/> : <DataModule title={title} rows={rows} error={error} loading={recordsLoading}/>}
       <p className="footnote">Company financial records are loaded from Supabase under the authenticated user. Payroll and tax calculations require professional review before production use.</p>
     </main>
   </div>;
@@ -92,8 +101,9 @@ function Dashboard({setSection}){
   </section>
 }
 
-function DataModule({title,rows,error}){
+function DataModule({title,rows,error,loading}){
   const columns=rows.length?Object.keys(rows[0]):[];
+  if(loading && !["Documents","Reports"].includes(title)) return <div className="notice">Loading {title.toLowerCase()} records…</div>;
   if(title==="Payroll") return <PayrollModule rows={rows} error={error}/>;
   if(title==="Documents") return <DocumentsModule/>;
   if(title==="Reports") return <ReportsModule supabase={supabase}/>;
