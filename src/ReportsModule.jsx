@@ -40,10 +40,23 @@ export default function ReportsModule({supabase}){
   const contractors=sum(data.contractor_payments);
   const outflow=expenses+contractors;
   const operatingBalance=income-outflow;
+  function exportCsv(){
+    const records=[["Category","Records","Total USD"],["Payments received",data.payments.length,income.toFixed(2)],["Business expenses",data.expenses.length,expenses.toFixed(2)],["Contractor payments",data.contractor_payments.length,contractors.toFixed(2)],["Operating balance","",operatingBalance.toFixed(2)]];
+    const csv=records.map(row=>row.join(",")).join("\r\n");
+    const blob=new Blob([csv],{type:"text/csv;charset=utf-8"});
+    const url=URL.createObjectURL(blob);
+    const link=document.createElement("a");
+    link.href=url;
+    link.download="norvin-group-financial-summary.csv";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  }
 
   return <section>
     <div className="toolbar"><div><strong>Reports</strong><div className="muted">BUSINESS ACTIVITY SUMMARY</div></div>
-      <button className="primary no-print" onClick={()=>window.print()}>Print / Save PDF</button>
+      <div className="no-print"><button type="button" disabled={loading||Boolean(error)} onClick={exportCsv}>Export CSV</button> <button className="primary" disabled={loading||Boolean(error)} onClick={()=>window.print()}>Print / Save PDF</button></div>
     </div>
     {loading&&<div className="notice">Loading all financial records…</div>}
     {error&&<div className="alert">Report totals are unavailable: {error}</div>}
