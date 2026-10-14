@@ -8,8 +8,8 @@ const TYPES = [
   ["expense-report","Expense Report"]
 ];
 
-export default function DocumentsModule({supabase}){
-  const [type,setType]=React.useState("estimate");
+export default function DocumentsModule({supabase,initialType="estimate",initialRecordId=null,onClose=null,autoPrint=false}){
+  const [type,setType]=React.useState(initialType);
   const [number,setNumber]=React.useState("");
   const [name,setName]=React.useState("");
   const [amount,setAmount]=React.useState("");
@@ -50,10 +50,11 @@ export default function DocumentsModule({supabase}){
         if(!active)return;
         if(cr.error)throw cr.error;if(sr.error)throw sr.error;if(pr.error)throw pr.error;
         setClients(cr.data||[]);setProjects(jr.data||[]);setSourceRows(sr.data||[]);setPayments(pr.data||[]);
+        if(initialRecordId){const rec=(sr.data||[]).find(x=>String(x.id)===String(initialRecordId));if(rec){const client=(cr.data||[]).find(x=>String(x.id)===String(rec.client_id));setSourceId(String(rec.id));setNumber(rec.invoice_number||rec.estimate_number||"");setName(client?.name||"");setAddress(client?.address||"");setAmount(rec.amount??"");setDate(String(rec.due_date||rec.valid_until||new Date().toISOString().slice(0,10)).slice(0,10));setDescription(rec.description||rec.notes||"");setNotes(rec.notes||"");setItems([]);setRate("");if(autoPrint)window.setTimeout(()=>window.print(),350);}}
       }catch(e){if(active)setError(e.message||"Unable to load saved records.");}
       finally{if(active)setSourceLoading(false);}
     } load(); return()=>{active=false};
-  },[supabase,type]);
+  },[supabase,type,initialRecordId,autoPrint]);
   function loadSavedRecord(id){
     setSourceId(id); if(!id)return;
     const r=sourceRows.find(x=>String(x.id)===String(id)); if(!r)return;
@@ -109,8 +110,9 @@ export default function DocumentsModule({supabase}){
   const partyLabel=type==="invoice"||type==="estimate"?"Bill To":type==="purchase-order"?"Vendor":type==="payroll-statement"?"Employee":"Payee";
   const amountLabel=type==="invoice"?"Amount Due":type==="estimate"?"Estimated Total":type==="purchase-order"?"Order Total":type==="payroll-statement"?"Gross Amount":"Expense Total";
   return <section className="document-module">
+    {onClose&&<div className="no-print"><button type="button" onClick={onClose}>← Back to records</button></div>}
     <div className="toolbar"><div><strong>Documents</strong><div className="muted">Document management and printing</div></div></div>
-    <div className="formgrid no-print">
+    {!onClose&&<div className="formgrid no-print">
       {sourceRows.length>0&&<label className="wide">Use saved {type==="invoice"?"invoice":type==="estimate"?"estimate":"expense"}<select value={sourceId} onChange={e=>loadSavedRecord(e.target.value)} disabled={sourceLoading}><option value="">Select a saved record…</option>{sourceRows.map(r=><option key={r.id} value={r.id}>{r.invoice_number||r.estimate_number||r.description||r.id} — {r.amount!=null?new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"}).format(Number(r.amount)||0):""}</option>)}</select></label>}
       <label>Document type<select value={type} onChange={e=>setType(e.target.value)}>{TYPES.map(([k,v])=><option key={k} value={k}>{v}</option>)}</select></label>
       <label>Document number<input value={documentNumber} readOnly title="System-generated reference"/></label>
@@ -133,7 +135,8 @@ export default function DocumentsModule({supabase}){
       {error&&<div className="alert" role="alert">{error}</div>}
       {type==="payroll-statement"&&<div className="notice" role="status">Manual draft only. This document does not calculate or certify payroll taxes, deductions, or net pay. Do not use it as an official pay stub.</div>}
       <div className="formactions"><button type="button" onClick={saveDocument} disabled={saving}>{saving?"Saving…":sourceId?"Update Record":"Save / Register"}</button><button className="primary" type="button" onClick={printDocument}>Print / Save PDF</button></div>
-    </div>
+    </div>}
+    {onClose&&<div className="formactions no-print"><button className="primary" type="button" onClick={printDocument}>Print / Save PDF</button></div>}
     <article className="print-sheet">
       <header className="document-header">
         <img className="document-logo" src="/norvin-logo-web.jpg" alt="NORVIN GROUP LLC"/>
