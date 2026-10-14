@@ -43,6 +43,7 @@ export default function ReportsModule({supabase}){
   const outflow=expenses+contractors;
   const operatingBalance=income-outflow;
   function exportCsv(){
+    if(loading||error)return;
     const records=[["Category","Records","Total USD"],["Payments received",data.payments.length,income.toFixed(2)],["Business expenses",data.expenses.length,expenses.toFixed(2)],["Contractor payments",data.contractor_payments.length,contractors.toFixed(2)],["Operating balance","",operatingBalance.toFixed(2)]];
     const csv=records.map(row=>row.join(",")).join("\r\n");
     const blob=new Blob([csv],{type:"text/csv;charset=utf-8"});
