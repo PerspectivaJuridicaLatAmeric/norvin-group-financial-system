@@ -311,3 +311,6 @@ iframe[src*="netlify"],iframe[title*="Netlify"],iframe[id*="netlify"],iframe[cla
 
 /* Customer-facing estimate metadata: document number and issue date only. */
 .print-sheet.norvin-premium-estimate .document-meta{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+
+/* Customer-facing estimates display only document number and date; status stays internal. */
+.print-sheet.norvin-premium-estimate .document-meta{grid-template-columns:repeat(2,minmax(0,1fr))!important}
