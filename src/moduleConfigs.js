@@ -12,8 +12,8 @@ export const moduleConfigs = {
     title: "Projects",
     fields: [
       { key: "name", label: "Project name", required: true },
-      { key: "status", label: "Status" },
-      { key: "address", label: "Project address" }
+      { key: "status", label: "Project status", type: "select", options: [{value:"in_progress",label:"In progress"},{value:"completed",label:"Completed"}] },
+      { key: "location", label: "Project address" }
     ]
   },
   invoices: {
