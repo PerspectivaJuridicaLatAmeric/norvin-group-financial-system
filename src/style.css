@@ -314,3 +314,28 @@ iframe[src*="netlify"],iframe[title*="Netlify"],iframe[id*="netlify"],iframe[cla
 
 /* Customer-facing estimates display only document number and date; status stays internal. */
 .print-sheet.norvin-premium-estimate .document-meta{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+
+/* Approved NORVIN invoice stationery: dark green, gold and ivory. */
+.print-sheet.norvin-premium-invoice{background:#fffdf8!important;color:#143d31!important;border-top:8px solid #0c4432!important;box-shadow:0 4px 22px #1a302018;padding:24px 30px!important}
+.norvin-premium-invoice .document-header{background:linear-gradient(110deg,#fffdf8 0%,#fffdf8 54%,#eae6d6 100%)!important;border-bottom:5px solid #bc9a42!important;padding:10px 8px 16px!important}
+.norvin-premium-invoice .document-title h2{color:#0c4432!important;font-family:Georgia,serif!important;font-size:31px!important;letter-spacing:.09em!important}
+.norvin-premium-invoice .document-meta{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+.norvin-premium-invoice .document-meta>div{border:1px solid #e2d9c5!important;background:#fffdf8!important}
+.norvin-premium-invoice .document-meta small,.norvin-premium-invoice .document-party small,.norvin-premium-invoice .document-reference small{color:#184b39!important}
+.norvin-premium-invoice .document-party,.norvin-premium-invoice .document-reference{background:#f5f1e6!important;border-top:5px solid #bba052!important;border-radius:5px!important}
+.norvin-premium-invoice .document-items .item-head{background:#0c4432!important;color:#f3dfac!important}
+.norvin-premium-invoice .document-items .item-row{background:#fffdf8!important;border-bottom:1px solid #dcd6c8!important}
+.norvin-premium-invoice .document-amount{background:#0c4432!important;color:#fff!important;border-radius:5px!important}
+.norvin-premium-invoice .document-amount strong{color:#f4d68b!important}
+.norvin-premium-invoice .document-notes,.norvin-premium-invoice .document-terms{background:#f5f1e6!important;border-left:4px solid #bc9a42!important;border-radius:5px!important}
+.norvin-premium-invoice .estimate-approval-block{display:flex!important;justify-content:flex-start!important;align-items:center!important;gap:8px!important;background:#fffdf8!important;border:1px solid #cbb476!important;border-radius:6px!important;padding:8px 12px!important;break-inside:avoid}
+.norvin-premium-invoice .estimate-approval-signature{flex:0 1 250px!important}
+.norvin-premium-invoice .estimate-approval-seal{flex:0 0 110px!important}
+.norvin-premium-invoice .estimate-approval-seal img{width:100px!important;height:100px!important}
+.norvin-premium-invoice footer{background:#0c4432!important;border-top:5px solid #bc9a42!important;color:#fff!important;padding:14px!important}
+.npi-email-form{padding:15px;margin:12px 0;border:1px solid #bca45c;border-radius:8px;display:flex;flex-wrap:wrap;align-items:end;gap:12px}
+.npi-email-form label{display:flex;flex-direction:column;gap:5px;min-width:250px;flex:1}
+.npi-email-form input{padding:10px;border:1px solid #b5c1b9;border-radius:5px}
+.npi-email-form p{width:100%;font-size:12px}
+.invoice-summary-line{display:flex;justify-content:space-between;padding:9px 12px;background:#f5f1e6}
+@media print{.print-sheet.norvin-premium-invoice{box-shadow:none!important;padding:12px 15px!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}.norvin-premium-invoice .document-header,.norvin-premium-invoice .document-items .item-head,.norvin-premium-invoice .document-amount,.norvin-premium-invoice footer{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}}
