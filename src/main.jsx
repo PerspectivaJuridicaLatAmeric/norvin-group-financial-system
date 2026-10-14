@@ -13,6 +13,8 @@ import DocumentsModule from "./DocumentsModule.jsx";
 import ReportsModule from "./ReportsModule.jsx";
 import { moduleConfigs } from "./moduleConfigs.js";
 import EmployeePayrollProfile from "./EmployeePayrollProfile.jsx";
+import { createPayrollDraft2026 } from "./payrollDraft2026.js";
+import { savePayrollDraft } from "./savePayrollDraft.js";
 
 const modules = [
   ["dashboard","Dashboard"],["clients","Clients"],["projects","Projects"],["estimates","Estimates"],
@@ -123,6 +125,7 @@ function PayrollModule({rows,error}){
   const [payDate,setPayDate]=useState("2026-10-14");
   const [it4Exemptions,setIt4Exemptions]=useState("");
   const [employee,setEmployee]=useState(null);
+  const [saveMessage,setSaveMessage]=useState("");
   function selectEmployee(e){
     setEmployee(e);
     if(!e)return;
@@ -139,6 +142,18 @@ function PayrollModule({rows,error}){
     catch(e){calcError=e.message;}
   }
   const money=n=>new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"}).format(n);
+  async function persistDraft(){
+    setSaveMessage("");
+    try{
+      if(!employee) throw new Error("Select an employee first.");
+      if(!result||!federalPreview||!ohioPreview) throw new Error("Complete gross pay and required tax inputs.");
+      const municipal={applies:false,verifiedNonApplicability:false};
+      const schoolDistrict={applies:false,verifiedNonApplicability:false};
+      const draft=createPayrollDraft2026({employeeId:employee.id,payDate,grossPay:Number(gross),federal:federalPreview,ohio:ohioPreview,fica:result,municipal,schoolDistrict});
+      await savePayrollDraft({supabase,draft});
+      setSaveMessage("Payroll draft saved.");
+    }catch(e){setSaveMessage(e.message);}
+  }
   return <section>
     <div className="toolbar"><div><strong>Payroll</strong><div className="muted">{rows.length} PAYROLL RECORDS</div></div></div>
     <div className="welcome">
@@ -170,6 +185,8 @@ function PayrollModule({rows,error}){
         <tr><th>Employer FICA (separate expense)</th><td>{money(result.employerFicaTotal)}</td></tr>
         <tr><th>Remaining After FICA — NOT FINAL NET PAY</th><td>{money(result.remainingAfterFica)}</td></tr>
       </tbody></table></div>}
+      <button className="primary" type="button" onClick={persistDraft}>Save payroll draft</button>
+      {saveMessage&&<div className="notice">{saveMessage}</div>}
       <div className="notice">Federal preview assumes W-4 Steps 3 and 4 are zero and gross pay equals federal taxable wages. It is not a complete employee W-4 calculation. Ohio preview requires an IT 4 exemption count and an eligible pay date; local taxes, benefits and other deductions remain uncalculated. Do not use this preview to pay employees.</div>
       <h2>Payroll withholding engine</h2>
       <p>Payroll will calculate employee withholdings from gross pay and employee tax elections. The calculation layer is intentionally separated from the user interface so federal, Social Security, Medicare, Ohio, and applicable local rules can be updated without rewriting payroll records.</p>
