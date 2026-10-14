@@ -55,7 +55,7 @@ export default function DocumentsModule({supabase,initialType="estimate",initial
         if(!active)return;
         if(cr.error)throw cr.error;if(sr.error)throw sr.error;if(pr.error)throw pr.error;
         setClients(cr.data||[]);setProjects(jr.data||[]);setSourceRows(sr.data||[]);setPayments(pr.data||[]);
-        if(initialRecordId){const rec=(sr.data||[]).find(x=>String(x.id)===String(initialRecordId));if(rec){const client=(cr.data||[]).find(x=>String(x.id)===String(rec.client_id));setSourceId(String(rec.id));setNumber(rec.invoice_number||rec.estimate_number||"");setName(client?.name||"");setAddress(client?.address||"");setAmount(rec.amount??rec.total??"");setIssueDate(String(rec.issue_date||rec.created_at||new Date().toISOString().slice(0,10)).slice(0,10));setPaymentInstructions(rec.payment_instructions||"");setTerms(rec.terms||"");setTaxRate(String(rec.tax_rate??0));setDate(String(rec.due_date||rec.valid_until||new Date().toISOString().slice(0,10)).slice(0,10));setDescription(rec.description||rec.notes||"");setNotes(rec.notes||"");setItems(Array.isArray(rec.line_items)?rec.line_items.map(item=>({description:item.description,qty:Number(item.quantity)||1,rate:Number(item.price)||0})):[]);setRate("");setStatus(rec.status||"Draft");setReference((jr.data||[]).find(p=>p.id===rec.project_id)?.name||"N/A");if(autoPrint)window.setTimeout(()=>window.print(),350);}}
+        if(initialRecordId){const rec=(sr.data||[]).find(x=>String(x.id)===String(initialRecordId));if(rec){const client=(cr.data||[]).find(x=>String(x.id)===String(rec.client_id));setSourceId(String(rec.id));setNumber(rec.invoice_number||rec.estimate_number||"");setName(client?.name||"");setAddress(client?.address||"");setAmount(rec.amount??rec.total??"");setIssueDate(String(rec.issue_date||rec.created_at||new Date().toISOString().slice(0,10)).slice(0,10));setPaymentInstructions(rec.payment_instructions||"");setTerms(rec.terms||"");setTaxRate(String(rec.tax_rate??0));setDate(String(rec.due_date||rec.valid_until||new Date().toISOString().slice(0,10)).slice(0,10));setDescription(rec.description||rec.notes||"");setNotes(rec.notes||"");setItems(Array.isArray(rec.line_items)?rec.line_items.map(item=>({description:item.description,qty:Number(item.quantity??item.qty)||1,rate:Number(item.price??item.rate)||0})):[]);setRate("");setStatus(rec.status||"Draft");setReference((jr.data||[]).find(p=>p.id===rec.project_id)?.name||"N/A");if(autoPrint)window.setTimeout(()=>window.print(),350);}}
       }catch(e){if(active)setError(e.message||"Unable to load saved records.");}
       finally{if(active)setSourceLoading(false);}
     } load(); return()=>{active=false};
@@ -99,6 +99,18 @@ export default function DocumentsModule({supabase,initialType="estimate",initial
       if(type==="invoice")payload={...payload,invoice_number:documentNumber,issue_date:issueDate,due_date:date,description,notes,terms,payment_instructions:paymentInstructions,tax_rate:Number(taxRate)||0,line_items:[...items,...(description.trim()&&currentLine!==null?[{description,qty:Number(qty),rate:Number(rate)}]:[])].map(item=>({description:item.description,quantity:item.qty,price:item.rate})),total:displayAmount};
       if(type==="estimate")payload={...payload,estimate_number:documentNumber,valid_until:date,description,notes};
       if(type==="expense-report")payload={...payload,expense_date:date,vendor:name,description:description||notes};
+      if(!sourceId){
+        const {data:authData,error:authError}=await supabase.auth.getUser();
+        if(authError||!authData?.user?.id)throw new Error("Sign in before saving a document.");
+        payload.user_id=authData.user.id;
+        if(type==="invoice"){
+          const matchingClient=clients.find(c=>c.name?.trim().toLowerCase()===name.trim().toLowerCase());
+          if(!matchingClient)throw new Error("Choose a registered client before saving an invoice.");
+          payload.client_id=matchingClient.id;
+          const matchingProject=projects.find(p=>p.name?.trim().toLowerCase()===reference.trim().toLowerCase());
+          if(matchingProject)payload.project_id=matchingProject.id;
+        }
+      }
       const existing=sourceId?sourceRows.find(x=>String(x.id)===String(sourceId)):null;
       const res=existing?await supabase.from(table).update(payload).eq("id",existing.id).select().single():await supabase.from(table).insert(payload).select().single();
       if(res.error)throw res.error;
