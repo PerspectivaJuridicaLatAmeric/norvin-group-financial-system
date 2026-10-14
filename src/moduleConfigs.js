@@ -52,7 +52,17 @@ export const moduleConfigs = {
       { key: "last_name", label: "Last name", required: true },
       { key: "email", label: "Email", type: "email" },
       { key: "phone", label: "Phone" },
-      { key: "employment_status", label: "Employment status" }
+      { key: "employment_status", label: "Employment status" },
+      { key: "pay_frequency", label: "Pay frequency" },
+      { key: "federal_filing_status", label: "Federal filing status" },
+      { key: "w4_step3", label: "W-4 Step 3", type: "number" },
+      { key: "w4_step4a", label: "W-4 Step 4(a)", type: "number" },
+      { key: "w4_step4b", label: "W-4 Step 4(b)", type: "number" },
+      { key: "w4_step4c", label: "W-4 Step 4(c)", type: "number" },
+      { key: "ohio_it4_exemptions", label: "Ohio IT 4 exemptions", type: "number" },
+      { key: "work_municipality", label: "Work municipality" },
+      { key: "residence_municipality", label: "Residence municipality" },
+      { key: "school_district_code", label: "School district code" }
     ]
   },
   contractors: {
