@@ -1,7 +1,7 @@
 import React from "react";
 
 const TYPES = [
-  ["estimate","Proforma / Estimate"],
+  ["estimate","Estimate"],
   ["invoice","Invoice"],
   ["purchase-order","Purchase Order"],
   ["payroll-statement","Payroll Statement (Manual Draft)"],
