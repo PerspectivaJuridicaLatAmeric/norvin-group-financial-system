@@ -4,13 +4,14 @@ import { createClient } from "@supabase/supabase-js";
 import "./style.css";
 import { calculateFica2026 } from "./payrollTax2026.js";
 import CrudModule from "./CrudModule.jsx";
+import DocumentsModule from "./DocumentsModule.jsx";
 import { moduleConfigs } from "./moduleConfigs.js";
 
 const modules = [
   ["dashboard","Dashboard"],["clients","Clients"],["projects","Projects"],["estimates","Estimates"],
   ["invoices","Invoices"],["payments","Payments"],["expenses","Expenses"],
   ["employees","Employees"],["payroll_entries","Payroll"],["contractors","Contractors"],
-  ["contractor_payments","Contractor Payments"]
+  ["contractor_payments","Contractor Payments"],["documents","Documents"]
 ];
 
 const url = import.meta.env.VITE_SUPABASE_URL;
@@ -85,6 +86,7 @@ function Dashboard({setSection}){
 function DataModule({title,rows,error}){
   const columns=rows.length?Object.keys(rows[0]):[];
   if(title==="Payroll") return <PayrollModule rows={rows} error={error}/>;
+  if(title==="Documents") return <DocumentsModule/>;
   if(title==="Clients") return <CrudModule supabase={supabase} table="clients" config={moduleConfigs.clients} initialRows={rows} loadError={error}/>;
   if(title==="Projects") return <CrudModule supabase={supabase} table="projects" config={moduleConfigs.projects} initialRows={rows} loadError={error}/>;
   if(title==="Estimates") return <CrudModule supabase={supabase} table="estimates" config={moduleConfigs.estimates} initialRows={rows} loadError={error}/>;
