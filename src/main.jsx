@@ -28,7 +28,7 @@ const key = import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPAB
 const recoveryOnArrival = new URLSearchParams(window.location.hash.slice(1)).get("type") === "recovery";
 const supabase = url && key ? createClient(url, key) : null;
 
-function BrandLogo({compact=false}){return <div className={compact?"company-logo compact":"company-logo"} aria-label="NORVIN GROUP LLC"><svg viewBox="0 0 92 78" aria-hidden="true"><path className="lg-gold" d="M8 67V42l16-12v25l22-17 22 17V30l16 12v25H68L46 50 24 67z"/><path className="lg-gray" d="M24 55V23l16-12v32z"/><path className="lg-navy" d="M46 38V5l16 12v34z"/><path className="lg-gold2" d="M40 43V12l6-7v33z"/><path className="lg-window" d="M41 58h5v5h-5zm7 0h5v5h-5zm-7 7h5v5h-5zm7 0h5v5h-5z"/></svg><div className="logo-copy"><strong>NORVIN</strong><span>GROUP LLC</span><small>SOLIDITY AND TRUST IN EVERY PROJECT</small></div></div>}
+function BrandLogo({compact=false}){return <div className={compact?"company-logo compact":"company-logo"} aria-label="NORVIN GROUP LLC"><img src="/norvin-logo-web.jpg" alt="NORVIN GROUP LLC — Solidity and Trust in Every Project"/></div>}
 
 function App(){
   const [recovering,setRecovering]=useState(recoveryOnArrival);
