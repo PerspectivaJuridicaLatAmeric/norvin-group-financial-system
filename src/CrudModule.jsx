@@ -10,6 +10,8 @@ export default function CrudModule({ supabase, table, config, initialRows = [], 
   const [busy,setBusy]=useState(false);
   const [documentAction,setDocumentAction]=useState(null);
   const isFinancialDocument=table==="invoices"||table==="estimates";
+  const isClients=table==="clients";
+  const clientCode=row=>row.client_sequence!=null?"CLI-"+String(row.client_sequence).padStart(5,"0"):"Pending assignment";
 
   useEffect(() => setRows(initialRows), [initialRows]);
 
@@ -74,7 +76,7 @@ export default function CrudModule({ supabase, table, config, initialRows = [], 
   if(documentAction&&isFinancialDocument)return <DocumentsModule supabase={supabase} key={String(documentAction.id)} initialType={table==="invoices"?"invoice":"estimate"} initialRecordId={documentAction.id} autoPrint={documentAction.print} onClose={()=>setDocumentAction(null)}/>;
 
   return <section>
-    <div className="toolbar"><div><strong>{config.title}</strong><div className="muted">{rows.length} RECORDS</div></div></div>
+    <div className="toolbar"><div><strong>{config.title}</strong><div className="muted">{rows.length} RECORDS{isClients&&" · Automatic client numbering"}</div></div></div>
     <form className="formgrid" onSubmit={save}>
       {config.fields.map(field => <label key={field.key}>{field.label}
         <input type={field.type || "text"} required={field.required} min={field.min} step={field.step} {...(field.type === "checkbox" ? {checked:Boolean(form[field.key]),onChange:e=>setForm(v=>({...v,[field.key]:e.target.checked}))} : {value:form[field.key],onChange:e=>setForm(v=>({...v,[field.key]:e.target.value}))})}/>
@@ -86,9 +88,9 @@ export default function CrudModule({ supabase, table, config, initialRows = [], 
     {message && <div className="notice">{message}</div>}
     {loadError ? <div className="alert">{loadError}</div> : <div className="tablewrap">
       {!rows.length ? <div className="empty">No records found.</div> : <table><thead><tr>
-        {config.fields.map(f => <th key={f.key}>{f.label}</th>)}<th>Actions</th>
+        {isClients&&<th>Client #</th>}{config.fields.map(f => <th key={f.key}>{f.label}</th>)}<th>Actions</th>
       </tr></thead><tbody>{rows.map(row => <tr key={row.id}>
-        {config.fields.map(f => <td key={f.key}>{String(row[f.key] ?? "")}</td>)}
+        {isClients&&<td><strong>{clientCode(row)}</strong></td>}{config.fields.map(f => <td key={f.key}>{String(row[f.key] ?? "")}</td>)}
         <td>{isFinancialDocument&&<><button type="button" onClick={()=>setDocumentAction({id:row.id,print:false})}>View</button> <button type="button" onClick={()=>setDocumentAction({id:row.id,print:true})}>Print</button> </>}<button type="button" disabled={busy} onClick={() => edit(row)}>Edit</button> <button type="button" disabled={busy} onClick={() => remove(row.id)}>Delete</button></td>
       </tr>)}</tbody></table>}
     </div>}
