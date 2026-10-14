@@ -26,6 +26,8 @@ export default function DocumentsModule({supabase}){
   const [sourceLoading,setSourceLoading]=React.useState(false);
   const [payments,setPayments]=React.useState([]);
   const [projects,setProjects]=React.useState([]);
+  const [saving,setSaving]=React.useState(false);
+  const [savedMessage,setSavedMessage]=React.useState("");
   React.useEffect(()=>{
     let active=true;
     async function load(){
@@ -62,6 +64,25 @@ export default function DocumentsModule({supabase}){
   const paidTotal=invoicePayments.reduce((s,p)=>s+(Number(p.amount)||0),0);
   const balanceDue=Math.max(0,displayAmount-paidTotal);
   const validAmount=amount!==""&&Number.isFinite(Number(amount))&&Number(amount)>=0;
+  async function saveDocument(){
+    if(!supabase)return;
+    const calculatedOk=showLineItems&&rate!==""&&Number.isFinite(Number(rate))&&Number(rate)>=0&&Number(qty)>0;
+    if(!number.trim()||!name.trim()||!date||(!validAmount&&!calculatedOk)){setError("Enter a document number, recipient, valid date and amount.");return;}
+    const table=type==="invoice"?"invoices":type==="estimate"?"estimates":type==="expense-report"?"expenses":null;
+    if(!table){setError("Saving this document type will be enabled with its dedicated register.");return;}
+    setSaving(true);setError("");setSavedMessage("");
+    try{
+      let payload={amount:displayAmount};
+      if(type==="invoice")payload={...payload,invoice_number:number,due_date:date,description,notes};
+      if(type==="estimate")payload={...payload,estimate_number:number,valid_until:date,description,notes};
+      if(type==="expense-report")payload={...payload,expense_date:date,vendor:name,description:description||notes};
+      const existing=sourceId?sourceRows.find(x=>String(x.id)===String(sourceId)):null;
+      const res=existing?await supabase.from(table).update(payload).eq("id",existing.id).select().single():await supabase.from(table).insert(payload).select().single();
+      if(res.error)throw res.error;
+      setSourceId(String(res.data.id));setSourceRows(rows=>existing?rows.map(x=>String(x.id)===String(existing.id)?res.data:x):[res.data,...rows]);
+      setSavedMessage(label+" registered successfully. You can reopen it later.");
+    }catch(e){setError(e.message||"Unable to register document.");}finally{setSaving(false);}
+  }
   function printDocument(){
     const calculatedOk=["invoice","estimate","purchase-order"].includes(type)&&rate!==""&&Number.isFinite(Number(rate))&&Number(rate)>=0&&Number(qty)>0;
     if(!number.trim()||!name.trim()||!date||(!validAmount&&!calculatedOk)){setError("Enter a document number, recipient, valid date and a valid amount or line-item rate.");return;}
@@ -82,9 +103,11 @@ export default function DocumentsModule({supabase}){
       <label>Amount<input type="number" step="0.01" value={amount} onChange={e=>setAmount(e.target.value)} placeholder={showLineItems?"Fallback total":"0.00"}/></label>
       <label>Date<input type="date" value={date} onChange={e=>setDate(e.target.value)}/></label>
       <label>Notes / Description<textarea rows="3" value={notes} onChange={e=>setNotes(e.target.value)}/></label>
+      {showLineItems&&<div className="calculated-total"><span>Total Amount</span><strong>{new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"}).format(displayAmount)}</strong></div>}
+      {savedMessage&&<div className="notice" role="status">{savedMessage}</div>}
       {error&&<div className="alert" role="alert">{error}</div>}
       {type==="payroll-statement"&&<div className="notice" role="status">Manual draft only. This document does not calculate or certify payroll taxes, deductions, or net pay. Do not use it as an official pay stub.</div>}
-      <div className="formactions"><button className="primary" type="button" onClick={printDocument}>Print / Save PDF</button></div>
+      <div className="formactions"><button type="button" onClick={saveDocument} disabled={saving}>{saving?"Saving…":sourceId?"Update Record":"Save / Register"}</button><button className="primary" type="button" onClick={printDocument}>Print / Save PDF</button></div>
     </div>
     <article className="print-sheet">
       <header className="document-header">
