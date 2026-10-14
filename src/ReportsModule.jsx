@@ -8,6 +8,7 @@ export default function ReportsModule({supabase}){
   const [loading,setLoading]=useState(true);
   const [asOf,setAsOf]=useState(null);
   const [error,setError]=useState("");
+  const [refreshKey,setRefreshKey]=useState(0);
 
   useEffect(()=>{
     let active=true;
@@ -34,7 +35,7 @@ export default function ReportsModule({supabase}){
       finally{if(active)setLoading(false);}
     })();
     return ()=>{active=false};
-  },[supabase]);
+  },[supabase,refreshKey]);
 
   const income=sum(data.payments);
   const expenses=sum(data.expenses);
@@ -57,7 +58,7 @@ export default function ReportsModule({supabase}){
 
   return <section>
     <div className="toolbar"><div><strong>Reports</strong><div className="muted">BUSINESS ACTIVITY SUMMARY</div></div>
-      <div className="no-print"><button type="button" disabled={loading||Boolean(error)} onClick={exportCsv}>Export CSV</button> <button className="primary" disabled={loading||Boolean(error)} onClick={()=>window.print()}>Print / Save PDF</button></div>
+      <div className="no-print"><button type="button" disabled={loading} onClick={()=>setRefreshKey(k=>k+1)}>Refresh</button> <button type="button" disabled={loading||Boolean(error)} onClick={exportCsv}>Export CSV</button> <button className="primary" disabled={loading||Boolean(error)} onClick={()=>window.print()}>Print / Save PDF</button></div>
     </div>
     {asOf&&!loading&&!error&&<p className="muted">Report generated: {asOf.toLocaleString("en-US")}</p>}
     {loading&&<div className="notice">Loading all financial records…</div>}
