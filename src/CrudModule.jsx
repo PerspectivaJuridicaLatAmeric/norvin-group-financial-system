@@ -32,7 +32,7 @@ export default function CrudModule({ supabase, table, config, initialRows = [], 
     try {
     if (!editingId) {
       const { data: authData, error: authError } = await supabase.auth.getUser();
-      if (authError || !authData?.user?.id) return setMessage("Authentication required to save records.");
+      if (authError || !authData?.user?.id) throw new Error("Authentication required to save records.");
       payload.user_id = authData.user.id;
     }
     const query = editingId
