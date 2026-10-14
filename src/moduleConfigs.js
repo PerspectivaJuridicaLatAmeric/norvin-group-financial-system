@@ -75,5 +75,16 @@ export const moduleConfigs = {
       { key: "method", label: "Method" },
       { key: "description", label: "Description" }
     ]
+  },
+  estimates: {
+    title: "Estimates",
+    fields: [
+      { key: "estimate_number", label: "Estimate number", required: true },
+      { key: "client_id", label: "Client ID" },
+      { key: "project_id", label: "Project ID" },
+      { key: "amount", label: "Amount", type: "number", required: true },
+      { key: "status", label: "Status" },
+      { key: "valid_until", label: "Valid until", type: "date" }
+    ]
   }
 };
