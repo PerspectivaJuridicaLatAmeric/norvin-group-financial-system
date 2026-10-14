@@ -130,3 +130,11 @@ aside>.company-logo{padding:7px;margin:0 0 8px;border:0;max-width:224px}
 .print-sheet .document-totals span{color:#62736a}
 .print-sheet .document-totals strong{color:#173e32}
 @media print{.print-sheet .document-totals{break-inside:avoid}}
+
+
+/* Printable, ink-textured status and company stamps */
+.print-sheet .corporate-seal{width:148px;height:148px;border:5px double #143f9c;border-radius:50%;margin:22px 0 12px auto;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;transform:rotate(-8deg);color:#143f9c;outline:1px dashed #143f9c;outline-offset:-12px;opacity:.82;font-family:Georgia,serif;line-height:1.2}
+.corporate-seal .seal-top{font-size:13px;font-weight:900;letter-spacing:.04em}.corporate-seal .seal-mark{font-size:34px;line-height:1.1}.corporate-seal .seal-center{font-size:9px;font-weight:900}.corporate-seal .seal-bottom{font-size:12px;font-weight:900;margin-top:6px}
+.print-sheet .invoice-stamp{display:inline-block;border:4px double currentColor;border-radius:7px;padding:9px 18px;margin:0 0 16px auto;font-family:Georgia,serif;font-weight:900;letter-spacing:.13em;font-size:17px;transform:rotate(-7deg);opacity:.85;text-align:center}
+.invoice-stamp.stamp-paid{color:#187044}.invoice-stamp.stamp-pending{color:#a16b16}.invoice-stamp.stamp-partial{color:#225a9a}.invoice-stamp.stamp-cancelled{color:#a12c2c}
+@media print{.corporate-seal,.invoice-stamp{break-inside:avoid;-webkit-print-color-adjust:exact;print-color-adjust:exact}}
