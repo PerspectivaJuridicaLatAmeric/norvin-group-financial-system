@@ -8,7 +8,7 @@ const TYPES = [
   ["expense-report","Expense Report"]
 ];
 
-export default function DocumentsModule({supabase,initialType="estimate",initialRecordId=null,onClose=null,autoPrint=false}){
+export default function DocumentsModule({supabase,initialType="estimate",initialRecordId=null,onClose=null,autoPrint=false,initialEmailMode=false}){
   const [type,setType]=React.useState(initialType);
   const [number,setNumber]=React.useState("");
   const [name,setName]=React.useState("");
@@ -36,6 +36,9 @@ export default function DocumentsModule({supabase,initialType="estimate",initial
   const [payments,setPayments]=React.useState([]);
   const [projects,setProjects]=React.useState([]);
   const [saving,setSaving]=React.useState(false);
+  const [emailOpen,setEmailOpen]=React.useState(initialEmailMode);
+  const [emailTo,setEmailTo]=React.useState("");
+  const [emailSending,setEmailSending]=React.useState(false);
   const [savedMessage,setSavedMessage]=React.useState("");
   React.useEffect(()=>{
     let active=true;
@@ -103,6 +106,25 @@ export default function DocumentsModule({supabase,initialType="estimate",initial
       setSavedMessage(label+" registered successfully. You can reopen it later.");
     }catch(e){setError(e.message||"Unable to register document.");}finally{setSaving(false);}
   }
+  async function sendInvoiceEmail(){
+    if(type!=="invoice"||!sourceId){setError("Save the invoice before sending.");return;}
+    if(!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(emailTo.trim())){setError("Enter a valid recipient email.");return;}
+    setEmailSending(true);setError("");setSavedMessage("");
+    try{
+      const sheet=document.querySelector(".norvin-premium-invoice");
+      if(!sheet)throw new Error("Invoice preview is unavailable.");
+      const {default:html2pdf}=await import("html2pdf.js");
+      const pdf=await html2pdf().set({margin:0,filename:(documentNumber||"invoice")+".pdf",image:{type:"jpeg",quality:0.98},html2canvas:{scale:2,useCORS:true},jsPDF:{unit:"in",format:"letter",orientation:"portrait"}}).from(sheet).outputPdf("datauristring");
+      const base64=pdf.split(",")[1];
+      if(!base64)throw new Error("PDF could not be generated.");
+      const {data,error:sendError}=await supabase.functions.invoke("send-invoice-email",{body:{invoice_id:sourceId,to:emailTo.trim(),pdf_base64:base64}});
+      if(sendError)throw sendError;
+      if(!data?.sent)throw new Error(data?.error||"Email delivery was not confirmed.");
+      setSavedMessage("Invoice email accepted by the email provider for delivery.");
+      setEmailOpen(false);
+    }catch(e){setError(e.message||"Unable to send invoice. Check the email service configuration.");}
+    finally{setEmailSending(false);}
+  }
   function printDocument(){
     // Printing a draft must not depend on database registration or required fields.
     setError("");
@@ -140,7 +162,10 @@ export default function DocumentsModule({supabase,initialType="estimate",initial
       {type==="payroll-statement"&&<div className="notice" role="status">Manual draft only. This document does not calculate or certify payroll taxes, deductions, or net pay. Do not use it as an official pay stub.</div>}
       <div className="formactions"><button type="button" onClick={saveDocument} disabled={saving}>{saving?"Saving…":sourceId?"Update Record":"Save / Register"}</button><button className="primary" type="button" onClick={printDocument}>Print / Save PDF</button></div>
     </div>}
-    {onClose&&<div className="formactions no-print"><button className="primary" type="button" onClick={printDocument}>Print / Save PDF</button></div>}
+    {onClose&&<div className="formactions no-print"><button className="primary" type="button" onClick={printDocument}>Print / Save PDF</button>{type==="invoice"&&<button type="button" onClick={()=>setEmailOpen(v=>!v)}>Send Email</button>}</div>}
+    {type==="invoice"&&emailOpen&&<div className="no-print npi-email-form"><label>Recipient email<input type="email" value={emailTo} onChange={e=>setEmailTo(e.target.value)} placeholder="customer@example.com" autoComplete="email"/></label><button type="button" disabled={emailSending} onClick={sendInvoiceEmail}>{emailSending?"Generating PDF and sending…":"Send invoice PDF"}</button><p>Sending requires a verified business sender and configured email service. No message is marked sent until the provider confirms acceptance.</p></div>}
+    {savedMessage&&onClose&&<div className="notice no-print" role="status">{savedMessage}</div>}
+    {error&&onClose&&<div className="alert no-print" role="alert">{error}</div>}
     <article className={`print-sheet ${type==="estimate"?"norvin-premium-estimate":type==="invoice"?"norvin-premium-invoice":""}`}>
       <header className="document-header">
         <img className="document-logo" src="/norvin-logo-web.jpg" alt="NORVIN GROUP LLC"/>
