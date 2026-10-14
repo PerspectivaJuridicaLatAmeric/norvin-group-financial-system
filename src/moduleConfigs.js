@@ -12,7 +12,7 @@ export const moduleConfigs = {
     title: "Projects",
     fields: [
       { key: "name", label: "Project name", required: true },
-      { key: "status", label: "Project status", type: "select", options: [{value:"in_progress",label:"In progress"},{value:"completed",label:"Completed"}] },
+      { key: "status", label: "Project status", type: "select", options: [{value:"in_progress",label:"In progress"},{value:"cancelled",label:"Cancelled"},{value:"completed",label:"Completed"},{value:"not_executed",label:"Not executed"}] },
       { key: "location", label: "Project address" }
     ]
   },
