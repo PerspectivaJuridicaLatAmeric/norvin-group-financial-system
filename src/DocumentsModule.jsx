@@ -194,7 +194,7 @@ export default function DocumentsModule({supabase,initialType="estimate",initial
       <div className="document-meta">
         <div><small>DOCUMENT #</small><strong>{documentNumber||"—"}</strong></div>
         <div><small>{type==="invoice"?"ISSUED":"DATE"}</small><strong>{type==="invoice"?issueDate:date}</strong></div>
-        {type==="invoice"&&<div><small>DUE DATE</small><strong>{date}</strong></div>
+        {type==="invoice"&&<div><small>DUE DATE</small><strong>{date}</strong></div>}
         
       </div>
       {reference&&<div className="document-reference"><small>PROJECT / REFERENCE</small><strong>{reference}</strong></div>}
