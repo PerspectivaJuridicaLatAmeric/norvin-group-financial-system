@@ -8,7 +8,7 @@ const TYPES = [
   ["expense-report","Expense Report"]
 ];
 
-export default function DocumentsModule(){
+export default function DocumentsModule({supabase}){
   const [type,setType]=React.useState("estimate");
   const [number,setNumber]=React.useState("");
   const [name,setName]=React.useState("");
@@ -20,6 +20,35 @@ export default function DocumentsModule(){
   const [qty,setQty]=React.useState("1");
   const [rate,setRate]=React.useState("");
   const [error,setError]=React.useState("");
+  const [sourceRows,setSourceRows]=React.useState([]);
+  const [clients,setClients]=React.useState([]);
+  const [sourceId,setSourceId]=React.useState("");
+  const [sourceLoading,setSourceLoading]=React.useState(false);
+  React.useEffect(()=>{
+    let active=true;
+    async function load(){
+      if(!supabase)return;
+      setSourceLoading(true); setSourceId("");
+      const table=type==="invoice"?"invoices":type==="estimate"?"estimates":type==="expense-report"?"expenses":null;
+      try{
+        const clientReq=supabase.from("clients").select("*").limit(200);
+        const sourceReq=table?supabase.from(table).select("*").limit(200):Promise.resolve({data:[],error:null});
+        const [cr,sr]=await Promise.all([clientReq,sourceReq]);
+        if(!active)return;
+        if(cr.error)throw cr.error;if(sr.error)throw sr.error;
+        setClients(cr.data||[]);setSourceRows(sr.data||[]);
+      }catch(e){if(active)setError(e.message||"Unable to load saved records.");}
+      finally{if(active)setSourceLoading(false);}
+    } load(); return()=>{active=false};
+  },[supabase,type]);
+  function loadSavedRecord(id){
+    setSourceId(id); if(!id)return;
+    const r=sourceRows.find(x=>String(x.id)===String(id)); if(!r)return;
+    const client=clients.find(x=>String(x.id)===String(r.client_id));
+    if(type==="invoice"){setNumber(r.invoice_number||"");setName(client?.name||"");setAddress(client?.address||"");setAmount(r.amount??"");setDate((r.due_date||new Date().toISOString().slice(0,10)).slice(0,10));setDescription(r.description||r.notes||"");}
+    if(type==="estimate"){setNumber(r.estimate_number||"");setName(client?.name||"");setAddress(client?.address||"");setAmount(r.amount??"");setDate((r.valid_until||new Date().toISOString().slice(0,10)).slice(0,10));setDescription(r.description||r.notes||"");}
+    if(type==="expense-report"){setNumber(r.expense_number||String(r.id).slice(0,8));setName(r.vendor||"");setAmount(r.amount??"");setDate((r.expense_date||new Date().toISOString().slice(0,10)).slice(0,10));setDescription(r.description||"");}
+  }
   const validAmount=amount!==""&&Number.isFinite(Number(amount))&&Number(amount)>=0;
   function printDocument(){
     const calculatedOk=["invoice","estimate","purchase-order"].includes(type)&&rate!==""&&Number.isFinite(Number(rate))&&Number(rate)>=0&&Number(qty)>0;
@@ -35,6 +64,7 @@ export default function DocumentsModule(){
   return <section className="document-module">
     <div className="toolbar"><div><strong>Documents</strong><div className="muted">PRINTABLE BUSINESS DOCUMENTS</div></div></div>
     <div className="formgrid no-print">
+      {sourceRows.length>0&&<label className="wide">Use saved {type==="invoice"?"invoice":type==="estimate"?"estimate":"expense"}<select value={sourceId} onChange={e=>loadSavedRecord(e.target.value)} disabled={sourceLoading}><option value="">Select a saved record…</option>{sourceRows.map(r=><option key={r.id} value={r.id}>{r.invoice_number||r.estimate_number||r.description||r.id} — {r.amount!=null?new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"}).format(Number(r.amount)||0):""}</option>)}</select></label>}
       <label>Document type<select value={type} onChange={e=>setType(e.target.value)}>{TYPES.map(([k,v])=><option key={k} value={k}>{v}</option>)}</select></label>
       <label>Document number<input value={number} onChange={e=>setNumber(e.target.value)}/></label>
       <label>{partyLabel}<input value={name} onChange={e=>setName(e.target.value)}/></label>
