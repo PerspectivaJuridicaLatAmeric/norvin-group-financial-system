@@ -109,7 +109,7 @@ export default function DocumentsModule({supabase}){
   const partyLabel=type==="invoice"||type==="estimate"?"Bill To":type==="purchase-order"?"Vendor":type==="payroll-statement"?"Employee":"Payee";
   const amountLabel=type==="invoice"?"Amount Due":type==="estimate"?"Estimated Total":type==="purchase-order"?"Order Total":type==="payroll-statement"?"Gross Amount":"Expense Total";
   return <section className="document-module">
-    <div className="toolbar"><div><strong>Documents</strong><div className="muted">PRINTABLE BUSINESS DOCUMENTS</div></div></div>
+    <div className="toolbar"><div><strong>Documents</strong><div className="muted">Document management and printing</div></div></div>
     <div className="formgrid no-print">
       {sourceRows.length>0&&<label className="wide">Use saved {type==="invoice"?"invoice":type==="estimate"?"estimate":"expense"}<select value={sourceId} onChange={e=>loadSavedRecord(e.target.value)} disabled={sourceLoading}><option value="">Select a saved record…</option>{sourceRows.map(r=><option key={r.id} value={r.id}>{r.invoice_number||r.estimate_number||r.description||r.id} — {r.amount!=null?new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"}).format(Number(r.amount)||0):""}</option>)}</select></label>}
       <label>Document type<select value={type} onChange={e=>setType(e.target.value)}>{TYPES.map(([k,v])=><option key={k} value={k}>{v}</option>)}</select></label>
