@@ -47,8 +47,8 @@ export default function DocumentsModule({supabase}){
     setSourceId(id); if(!id)return;
     const r=sourceRows.find(x=>String(x.id)===String(id)); if(!r)return;
     const client=clients.find(x=>String(x.id)===String(r.client_id));
-    if(type==="invoice"){setNumber(r.invoice_number||"");setName(client?.name||"");setAddress(client?.address||"");setAmount(r.amount??"");setDate((r.due_date||new Date().toISOString().slice(0,10)).slice(0,10));setDescription(r.description||r.notes||"");}
-    if(type==="estimate"){setNumber(r.estimate_number||"");setName(client?.name||"");setAddress(client?.address||"");setAmount(r.amount??"");setDate((r.valid_until||new Date().toISOString().slice(0,10)).slice(0,10));setDescription(r.description||r.notes||"");}
+    if(type==="invoice"){setNumber(r.invoice_number||"");setName(client?.name||"");setAddress(client?.address||"");setAmount(r.amount??"");setDate((r.due_date||new Date().toISOString().slice(0,10)).slice(0,10));setDescription(r.description||r.notes||"");setRate("");setQty("1");setNotes(r.notes||"");}
+    if(type==="estimate"){setNumber(r.estimate_number||"");setName(client?.name||"");setAddress(client?.address||"");setAmount(r.amount??"");setDate((r.valid_until||new Date().toISOString().slice(0,10)).slice(0,10));setDescription(r.description||r.notes||"");setRate("");setQty("1");setNotes(r.notes||"");}
     if(type==="expense-report"){setNumber(r.expense_number||String(r.id).slice(0,8));setName(r.vendor||"");setAmount(r.amount??"");setDate((r.expense_date||new Date().toISOString().slice(0,10)).slice(0,10));setDescription(r.description||"");}
   }
   const selectedSource=sourceRows.find(x=>String(x.id)===String(sourceId));
