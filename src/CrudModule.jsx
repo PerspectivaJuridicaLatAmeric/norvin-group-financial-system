@@ -6,6 +6,7 @@ export default function CrudModule({ supabase, table, config, initialRows = [], 
   const [form, setForm] = useState(empty);
   const [editingId, setEditingId] = useState(null);
   const [message, setMessage] = useState("");
+  const [busy,setBusy]=useState(false);
 
   useEffect(() => setRows(initialRows), [initialRows]);
 
@@ -18,7 +19,10 @@ export default function CrudModule({ supabase, table, config, initialRows = [], 
   async function save(e) {
     e.preventDefault();
     setMessage("");
+    if(busy)return;
+    setBusy(true);
     const payload = Object.fromEntries(Object.entries(form).filter(([, value]) => value !== ""));
+    try {
     if (!editingId) {
       const { data: authData, error: authError } = await supabase.auth.getUser();
       if (authError || !authData?.user?.id) return setMessage("Authentication required to save records.");
@@ -35,6 +39,8 @@ export default function CrudModule({ supabase, table, config, initialRows = [], 
       setEditingId(null);
       setMessage(editingId ? "Record updated." : "Record created.");
     } catch (err) { setMessage(err.message); }
+    } catch(err){setMessage(err.message||"Unable to save record.");}
+    finally{setBusy(false);}
   }
 
   function edit(row) {
@@ -44,7 +50,12 @@ export default function CrudModule({ supabase, table, config, initialRows = [], 
 
   async function remove(id) {
     if (!window.confirm("Delete this record?")) return;
-    const { error } = await supabase.from(table).delete().eq("id", id);
+    if(busy)return;
+    setBusy(true);
+    let deletion;
+    try{deletion=await supabase.from(table).delete().eq("id", id);}catch(e){setMessage(e.message);setBusy(false);return;}
+    const { error } = deletion;
+    setBusy(false);
     if (error) return setMessage(error.message);
     setRows(current => current.filter(row => row.id !== id));
     setMessage("Record deleted.");
@@ -56,7 +67,7 @@ export default function CrudModule({ supabase, table, config, initialRows = [], 
       {config.fields.map(field => <label key={field.key}>{field.label}
         <input type={field.type || "text"} required={field.required} {...(field.type === "checkbox" ? {checked:Boolean(form[field.key]),onChange:e=>setForm(v=>({...v,[field.key]:e.target.checked}))} : {value:form[field.key],onChange:e=>setForm(v=>({...v,[field.key]:e.target.value}))})}/>
       </label>)}
-      <div className="formactions"><button className="primary">{editingId ? "Update" : "Add"}</button>
+      <div className="formactions"><button className="primary" disabled={busy}>{busy?"Saving…":editingId ? "Update" : "Add"}</button>
         {editingId && <button type="button" onClick={() => {setEditingId(null);setForm(empty)}}>Cancel</button>}
       </div>
     </form>
@@ -66,7 +77,7 @@ export default function CrudModule({ supabase, table, config, initialRows = [], 
         {config.fields.map(f => <th key={f.key}>{f.label}</th>)}<th>Actions</th>
       </tr></thead><tbody>{rows.map(row => <tr key={row.id}>
         {config.fields.map(f => <td key={f.key}>{String(row[f.key] ?? "")}</td>)}
-        <td><button onClick={() => edit(row)}>Edit</button> <button onClick={() => remove(row.id)}>Delete</button></td>
+        <td><button type="button" disabled={busy} onClick={() => edit(row)}>Edit</button> <button type="button" disabled={busy} onClick={() => remove(row.id)}>Delete</button></td>
       </tr>)}</tbody></table>}
     </div>}
   </section>;
