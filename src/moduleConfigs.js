@@ -48,12 +48,11 @@ export const moduleConfigs = {
   employees: {
     title: "Employees",
     fields: [
-      { key: "name", label: "Employee name", required: true },
+      { key: "first_name", label: "First name", required: true },
+      { key: "last_name", label: "Last name", required: true },
       { key: "email", label: "Email", type: "email" },
       { key: "phone", label: "Phone" },
-      { key: "pay_rate", label: "Pay rate", type: "number" },
-      { key: "pay_type", label: "Pay type" },
-      { key: "status", label: "Status" }
+      { key: "employment_status", label: "Employment status" }
     ]
   },
   contractors: {
