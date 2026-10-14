@@ -24,7 +24,7 @@ export default function DocumentsModule({supabase}){
   const [clients,setClients]=React.useState([]);
   const [sourceId,setSourceId]=React.useState("");
   const [sourceLoading,setSourceLoading]=React.useState(false);
-  const [payments,setPayments]=React.useState([]);
+  const [payments,setPayments]=React.useState([]);\n  const [projects,setProjects]=React.useState([]);
   React.useEffect(()=>{
     let active=true;
     async function load(){
@@ -32,10 +32,10 @@ export default function DocumentsModule({supabase}){
       setSourceLoading(true); setSourceId("");
       const table=type==="invoice"?"invoices":type==="estimate"?"estimates":type==="expense-report"?"expenses":null;
       try{
-        const clientReq=supabase.from("clients").select("*").limit(200);
+        const clientReq=supabase.from("clients").select("*").limit(200);\n        const projectReq=supabase.from("projects").select("*").limit(200);
         const sourceReq=table?supabase.from(table).select("*").limit(200):Promise.resolve({data:[],error:null});
         const paymentReq=type==="invoice"?supabase.from("payments").select("*").limit(500):Promise.resolve({data:[],error:null});
-        const [cr,sr,pr]=await Promise.all([clientReq,sourceReq,paymentReq]);
+        const [cr,jr,sr,pr]=await Promise.all([clientReq,projectReq,sourceReq,paymentReq]);
         if(!active)return;
         if(cr.error)throw cr.error;if(sr.error)throw sr.error;if(pr.error)throw pr.error;
         setClients(cr.data||[]);setSourceRows(sr.data||[]);setPayments(pr.data||[]);
@@ -46,9 +46,9 @@ export default function DocumentsModule({supabase}){
   function loadSavedRecord(id){
     setSourceId(id); if(!id)return;
     const r=sourceRows.find(x=>String(x.id)===String(id)); if(!r)return;
-    const client=clients.find(x=>String(x.id)===String(r.client_id));
-    if(type==="invoice"){setNumber(r.invoice_number||"");setName(client?.name||"");setAddress(client?.address||"");setAmount(r.amount??"");setDate((r.due_date||new Date().toISOString().slice(0,10)).slice(0,10));setDescription(r.description||r.notes||"");setRate("");setQty("1");setNotes(r.notes||"");}
-    if(type==="estimate"){setNumber(r.estimate_number||"");setName(client?.name||"");setAddress(client?.address||"");setAmount(r.amount??"");setDate((r.valid_until||new Date().toISOString().slice(0,10)).slice(0,10));setDescription(r.description||r.notes||"");setRate("");setQty("1");setNotes(r.notes||"");}
+    const client=clients.find(x=>String(x.id)===String(r.client_id));\n    const project=projects.find(x=>String(x.id)===String(r.project_id));
+    if(type==="invoice"){setNumber(r.invoice_number||"");setName(client?.name||"");setAddress(client?.address||"");setAmount(r.amount??"");setDate((r.due_date||new Date().toISOString().slice(0,10)).slice(0,10));setDescription(r.description||r.notes||project?.name||"");setRate("");setQty("1");setNotes(r.notes||"");}
+    if(type==="estimate"){setNumber(r.estimate_number||"");setName(client?.name||"");setAddress(client?.address||"");setAmount(r.amount??"");setDate((r.valid_until||new Date().toISOString().slice(0,10)).slice(0,10));setDescription(r.description||r.notes||project?.name||"");setRate("");setQty("1");setNotes(r.notes||"");}
     if(type==="expense-report"){setNumber(r.expense_number||String(r.id).slice(0,8));setName(r.vendor||"");setAmount(r.amount??"");setDate((r.expense_date||new Date().toISOString().slice(0,10)).slice(0,10));setDescription(r.description||"");}
   }
   const selectedSource=sourceRows.find(x=>String(x.id)===String(sourceId));
