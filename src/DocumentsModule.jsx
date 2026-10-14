@@ -137,10 +137,10 @@ export default function DocumentsModule({supabase,initialType="estimate",initial
       <div className="formactions"><button type="button" onClick={saveDocument} disabled={saving}>{saving?"Saving…":sourceId?"Update Record":"Save / Register"}</button><button className="primary" type="button" onClick={printDocument}>Print / Save PDF</button></div>
     </div>}
     {onClose&&<div className="formactions no-print"><button className="primary" type="button" onClick={printDocument}>Print / Save PDF</button></div>}
-    <article className="print-sheet">
+    <article className={`print-sheet ${type==="estimate"?"norvin-premium-estimate":""}`}>
       <header className="document-header">
         <img className="document-logo" src="/norvin-logo-web.jpg" alt="NORVIN GROUP LLC"/>
-        <div className="document-title"><h2>{label}</h2></div>
+        <div className="document-title"><h2>{label}</h2>{type==="estimate"&&<small className="estimate-sector-line">RESIDENTIAL  |  COMMERCIAL  |  INDUSTRIAL</small>}</div>
       </header>
       {type==="invoice"&&<div className={"invoice-stamp stamp-"+resolvedPaymentStatus} aria-label={"Invoice status: "+resolvedPaymentStatus}>{resolvedPaymentStatus==="paid"?"PAID":resolvedPaymentStatus==="partial"?"PARTIALLY PAID":resolvedPaymentStatus==="cancelled"?"CANCELLED":"PENDING PAYMENT"}</div>}
       <div className="document-meta">
