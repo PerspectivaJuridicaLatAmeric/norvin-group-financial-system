@@ -146,7 +146,7 @@ export default function DocumentsModule({supabase,initialType="estimate",initial
       <div className="document-meta">
         <div><small>DOCUMENT #</small><strong>{documentNumber||"—"}</strong></div>
         <div><small>DATE</small><strong>{date}</strong></div>
-        <div><small>STATUS</small><strong>{status}</strong></div>
+        
       </div>
       {reference&&<div className="document-reference"><small>PROJECT / REFERENCE</small><strong>{reference}</strong></div>}
       <div className="document-party"><small>{partyLabel.toUpperCase()}</small><strong>{name||"—"}</strong>{address&&<span>{address}</span>}</div>
