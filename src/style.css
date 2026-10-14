@@ -178,3 +178,10 @@ aside>.company-logo{padding:7px;margin:0 0 8px;border:0;max-width:224px}
 /* Hide Netlify's floating site badge from the financial system and printed PDFs. */
 iframe[src*="netlify"],iframe[title*="Netlify"],iframe[id*="netlify"],iframe[class*="netlify"],[data-netlify-badge],#netlify-badge{display:none!important;visibility:hidden!important}
 @media print{body>iframe,body>div>iframe:not(.document-frame),iframe[src*="netlify"],iframe[title*="Netlify"],iframe[id*="netlify"]{display:none!important;visibility:hidden!important}body::after{display:none!important}}
+
+/* Keep the authorized signature and original company seal side by side on estimates. */
+.print-sheet .estimate-approval-block{display:grid!important;grid-template-columns:minmax(0,1fr) 140px!important;align-items:center!important;column-gap:16px!important;break-inside:avoid!important;page-break-inside:avoid!important}
+.print-sheet .estimate-approval-signature{grid-column:1;min-width:0}
+.print-sheet .estimate-approval-seal{grid-column:2;justify-self:center;align-self:center}
+@media(max-width:600px){.print-sheet .estimate-approval-block{grid-template-columns:minmax(0,1fr) 100px!important;column-gap:8px!important}.print-sheet .estimate-approval-seal img{width:88px;height:88px}}
+@media print{.print-sheet .estimate-approval-block{grid-template-columns:minmax(0,1fr) 120px!important;break-inside:avoid!important;page-break-inside:avoid!important}}
