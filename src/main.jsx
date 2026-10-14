@@ -87,6 +87,9 @@ function DataModule({title,rows,error}){
   if(title==="Payroll") return <PayrollModule rows={rows} error={error}/>;
   if(title==="Clients") return <CrudModule supabase={supabase} table="clients" config={moduleConfigs.clients} initialRows={rows} loadError={error}/>;
   if(title==="Projects") return <CrudModule supabase={supabase} table="projects" config={moduleConfigs.projects} initialRows={rows} loadError={error}/>;
+  if(title==="Invoices") return <CrudModule supabase={supabase} table="invoices" config={moduleConfigs.invoices} initialRows={rows} loadError={error}/>;
+  if(title==="Payments") return <CrudModule supabase={supabase} table="payments" config={moduleConfigs.payments} initialRows={rows} loadError={error}/>;
+  if(title==="Expenses") return <CrudModule supabase={supabase} table="expenses" config={moduleConfigs.expenses} initialRows={rows} loadError={error}/>;
   return <section><div className="toolbar"><div><strong>{title}</strong><div className="muted">{rows.length} RECORDS</div></div></div>
     {error?<div className="alert">Unable to load this module: {error}</div>:
     <div className="tablewrap">{!rows.length?<div className="empty">No records found.</div>:
