@@ -25,9 +25,11 @@ const modules = [
 
 const url = import.meta.env.VITE_SUPABASE_URL;
 const key = import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+const recoveryOnArrival = new URLSearchParams(window.location.hash.slice(1)).get("type") === "recovery";
 const supabase = url && key ? createClient(url, key) : null;
 
 function App(){
+  const [recovering,setRecovering]=useState(recoveryOnArrival);
   const [section,setSection]=useState("dashboard");
   const [session,setSession]=useState(null);
   const [loading,setLoading]=useState(Boolean(supabase));
@@ -39,7 +41,7 @@ function App(){
   useEffect(()=>{
     if(!supabase){ setLoading(false); return; }
     supabase.auth.getSession().then(({data,error})=>{setSession(data?.session||null);if(error)setAuthError(error.message);}).catch(e=>setAuthError(e.message)).finally(()=>setLoading(false));
-    const {data:listener}=supabase.auth.onAuthStateChange((_event,next)=>{setSession(next);setAuthError("");});
+    const {data:listener}=supabase.auth.onAuthStateChange((_event,next)=>{setSession(next);setAuthError("");if(_event==="PASSWORD_RECOVERY")setRecovering(true);});
     return ()=>listener.subscription.unsubscribe();
   },[]);
 
@@ -69,12 +71,15 @@ function App(){
     <div className="notice">Supabase environment variables are not configured on this deployment. Add the project URL and publishable key to enable secure sign-in and company data.</div>
   </div></div>;
 
+  if(session && recovering) return <NewPassword onDone={()=>setRecovering(false)}/>;
+
   if(!session) return <><Login />{authError&&<div className="alert" role="alert">Authentication initialization error: {authError}</div>}</>;
 
   return <div className="layout">
     <aside>
       <div className="brand">NG</div><h2>NORVIN GROUP<br/>LLC</h2><div className="muted">FINANCIAL SYSTEM</div>
       {modules.map(([id,label])=><button key={id} className={"nav "+(section===id?"active":"")} onClick={()=>setSection(id)}>{label}</button>)}
+      <button className="nav" onClick={()=>setRecovering(true)}>Change password</button>
       <button className="nav logout" onClick={()=>supabase.auth.signOut()}>Sign out</button>
     </aside>
     <main className="content">
@@ -86,20 +91,62 @@ function App(){
 }
 
 function Login(){
+  const [resetMode,setResetMode]=useState(new URLSearchParams(window.location.search).get("recover")==="1");
   const [email,setEmail]=useState(""); const [password,setPassword]=useState(""); const [message,setMessage]=useState(""); const [submitting,setSubmitting]=useState(false);
   async function submit(e){
     e.preventDefault();if(submitting)return;
     setMessage("");setSubmitting(true);
-    try{const {error}=await supabase.auth.signInWithPassword({email,password});if(error)throw error;}
+    try{
+      if(resetMode){
+        const {error}=await supabase.auth.resetPasswordForEmail(email.trim(),{redirectTo:window.location.origin+"/"});
+        if(error)throw error;
+        setMessage("If this email is registered, a recovery link has been requested. Check your inbox and spam folder.");
+      } else {
+        const {error}=await supabase.auth.signInWithPassword({email:email.trim(),password});if(error)throw error;
+      }
+    }
     catch(err){setMessage(err.message||"Unable to sign in. Please try again.");}
     finally{setSubmitting(false);}
   }
   return <div className="login"><form className="panel" onSubmit={submit}><div className="brand">NG</div><h1>NORVIN GROUP LLC</h1><p>Financial Management System</p>
     <label>Email<input type="email" value={email} onChange={e=>setEmail(e.target.value)} required/></label>
-    <label>Password<input type="password" value={password} onChange={e=>setPassword(e.target.value)} required/></label>
-    {message&&<div className="alert">{message}</div>}<button className="primary" disabled={submitting}>{submitting?"Signing in…":"Sign in"}</button>
+    <label style={{display:resetMode?"none":undefined}}>Password<input type="password" autoComplete="current-password" value={password} onChange={e=>setPassword(e.target.value)} required={!resetMode} disabled={resetMode}/></label>
+    {message&&<div className="alert">{message}</div>}<button className="primary" disabled={submitting}>{submitting?"Please wait…":resetMode?"Send recovery email":"Sign in"}</button>
+    <button type="button" disabled={submitting} onClick={()=>{setResetMode(!resetMode);setMessage("");setPassword("");}}>{resetMode?"Back to sign in":"Forgot password?"}</button>
     <small>Access is controlled by Supabase Authentication. Do not share credentials.</small>
   </form></div>
+}
+
+function NewPassword({onDone}){
+  const [password,setPassword]=useState("");
+  const [confirm,setConfirm]=useState("");
+  const [message,setMessage]=useState("");
+  const [busy,setBusy]=useState(false);
+  const [done,setDone]=useState(false);
+  async function submit(e){
+    e.preventDefault();if(busy)return;
+    if(password!==confirm){setMessage("Passwords do not match.");return;}
+    if(password.length<12){setMessage("Use at least 12 characters.");return;}
+    setBusy(true);setMessage("");
+    try{
+      const {error}=await supabase.auth.updateUser({password});
+      if(error)throw error;
+      setPassword("");setConfirm("");setDone(true);
+      window.history.replaceState(null,"",window.location.pathname);
+    }catch(err){setMessage(err.message||"Unable to update password. Request a new recovery link.");}
+    finally{setBusy(false);}
+  }
+  return <div className="login"><form className="panel" onSubmit={submit}>
+    <div className="brand">NG</div><h1>NORVIN GROUP LLC</h1>
+    <h2>{done?"Password updated":"Choose a new password"}</h2>
+    {done?<><p>Your new password has been saved.</p><button type="button" className="primary" onClick={onDone}>Continue to dashboard</button></>:<>
+      <label>New password<input type="password" autoComplete="new-password" minLength={12} required value={password} onChange={e=>setPassword(e.target.value)}/></label>
+      <label>Confirm new password<input type="password" autoComplete="new-password" minLength={12} required value={confirm} onChange={e=>setConfirm(e.target.value)}/></label>
+      <p>Use at least 12 characters. Keep this password private.</p>
+      {message&&<div className="alert" role="alert">{message}</div>}
+      <button className="primary" disabled={busy}>{busy?"Saving…":"Save new password"}</button>
+    </>}
+  </form></div>;
 }
 
 function Dashboard({setSection}){
