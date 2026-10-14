@@ -39,7 +39,7 @@ function App(){
   useEffect(()=>{
     if(!supabase){ setLoading(false); return; }
     supabase.auth.getSession().then(({data,error})=>{setSession(data?.session||null);if(error)setAuthError(error.message);}).catch(e=>setAuthError(e.message)).finally(()=>setLoading(false));
-    const {data:listener}=supabase.auth.onAuthStateChange((_event,next)=>setSession(next));
+    const {data:listener}=supabase.auth.onAuthStateChange((_event,next)=>{setSession(next);setAuthError("");});
     return ()=>listener.subscription.unsubscribe();
   },[]);
 
