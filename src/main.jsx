@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { createClient } from "@supabase/supabase-js";
 import "./style.css";
 import { calculateFica2026 } from "./payrollTax2026.js";
+import { validatePayrollReadiness, WITHHOLDING_SOURCES_2026 } from "./withholdingRules2026.js";
 import CrudModule from "./CrudModule.jsx";
 import DocumentsModule from "./DocumentsModule.jsx";
 import ReportsModule from "./ReportsModule.jsx";
@@ -107,6 +108,7 @@ function DataModule({title,rows,error}){
 }
 
 function PayrollModule({rows,error}){
+  const readiness = validatePayrollReadiness();
   const [gross,setGross]=useState("");
   const [ssYtd,setSsYtd]=useState("0");
   const [medYtd,setMedYtd]=useState("0");
@@ -120,6 +122,8 @@ function PayrollModule({rows,error}){
     <div className="toolbar"><div><strong>Payroll</strong><div className="muted">{rows.length} PAYROLL RECORDS</div></div></div>
     <div className="welcome">
       <h2>2026 FICA withholding calculator</h2>
+      {!readiness.ready && <div className="alert">Live payroll is blocked: federal, Ohio, school district and municipal withholding are not fully verified. This screen is a preview only.</div>}
+      <p className="muted">Rule year: 2026 · Verified sources tracked: {Object.keys(WITHHOLDING_SOURCES_2026).length} · Missing production requirements: {readiness.missing.length}</p>
       <p>Enter current gross pay and prior year-to-date Social Security and Medicare taxable wages for this employee. This is a calculation preview, not a payroll payment or saved record.</p>
       <div className="formgrid">
         <label>Gross pay ($)<input type="number" min="0" step="0.01" value={gross} onChange={e=>setGross(e.target.value)}/></label>
