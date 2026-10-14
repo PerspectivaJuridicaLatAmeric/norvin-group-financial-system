@@ -61,7 +61,7 @@ export default function DocumentsModule({supabase}){
     const r=sourceRows.find(x=>String(x.id)===String(id)); if(!r)return;
     const client=clients.find(x=>String(x.id)===String(r.client_id));
     const project=projects.find(x=>String(x.id)===String(r.project_id));
-    if(type==="invoice"){setNumber(r.invoice_number||"");setName(client?.name||"");setAddress(client?.address||"");setAmount(r.amount??"");setDate((r.due_date||new Date().toISOString().slice(0,10)).slice(0,10));setDescription(r.description||r.notes||project?.name||"");setRate("");setQty("1");setNotes(r.notes||"");}
+    if(type==="invoice"){setPaymentStatus(String(r.status||"").toLowerCase().includes("cancel")?"cancelled":"pending");setNumber(r.invoice_number||"");setName(client?.name||"");setAddress(client?.address||"");setAmount(r.amount??"");setDate((r.due_date||new Date().toISOString().slice(0,10)).slice(0,10));setDescription(r.description||r.notes||project?.name||"");setRate("");setQty("1");setNotes(r.notes||"");}
     if(type==="estimate"){setNumber(r.estimate_number||"");setName(client?.name||"");setAddress(client?.address||"");setAmount(r.amount??"");setDate((r.valid_until||new Date().toISOString().slice(0,10)).slice(0,10));setDescription(r.description||r.notes||project?.name||"");setRate("");setQty("1");setNotes(r.notes||"");}
     if(type==="expense-report"){setNumber(r.expense_number||String(r.id).slice(0,8));setName(r.vendor||"");setAmount(r.amount??"");setDate((r.expense_date||new Date().toISOString().slice(0,10)).slice(0,10));setDescription(r.description||"");}
   }
@@ -74,6 +74,7 @@ export default function DocumentsModule({supabase}){
   const invoicePayments=type==="invoice"&&selectedSource?payments.filter(p=>String(p.invoice_id)===String(selectedSource.id)): [];
   const paidTotal=invoicePayments.reduce((s,p)=>s+(Number(p.amount)||0),0);
   const balanceDue=Math.max(0,displayAmount-paidTotal);
+  const resolvedPaymentStatus=type==="invoice"&&selectedSource?(paymentStatus==="cancelled"?"cancelled":paidTotal>0&&balanceDue<=0.005?"paid":paidTotal>0?"partial":"pending"):paymentStatus;
   const validAmount=amount!==""&&Number.isFinite(Number(amount))&&Number(amount)>=0;
   async function saveDocument(){
     if(!supabase)return;
@@ -117,7 +118,7 @@ export default function DocumentsModule({supabase}){
       <label>Reference / Project<input value={reference} onChange={e=>setReference(e.target.value)} placeholder="Project or work order reference"/></label>
       <label>Document status<select value={status} onChange={e=>setStatus(e.target.value)}><option>Draft</option><option>Issued</option><option>Approved</option><option>Paid</option></select></label>
       <label className="wide">Terms / Conditions<textarea rows="2" value={terms} onChange={e=>setTerms(e.target.value)}/></label>
-      {type==="invoice"&&<label>Payment status<select value={paymentStatus} onChange={e=>setPaymentStatus(e.target.value)}><option value="pending">Pending Payment</option><option value="partial">Partially Paid</option><option value="paid">Paid</option><option value="cancelled">Cancelled</option></select></label>}
+      {type==="invoice"&&<div className="notice wide">Payment status: {resolvedPaymentStatus==="paid"?"PAID":resolvedPaymentStatus==="partial"?"PARTIALLY PAID":resolvedPaymentStatus==="cancelled"?"CANCELLED":"PENDING PAYMENT"}. {selectedSource?"Calculated from registered invoice payments.":"Register the invoice and its payments to update this status automatically."}</div>}
       <label>Project / Reference<input value={reference} onChange={e=>setReference(e.target.value)} placeholder="Project or purchase reference"/></label>
       <label>Business contact<input value={contact} onChange={e=>setContact(e.target.value)} placeholder="Company phone or email"/></label>
       <label className="wide">Terms / Instructions<textarea rows="2" value={terms} onChange={e=>setTerms(e.target.value)}/></label>
@@ -133,7 +134,7 @@ export default function DocumentsModule({supabase}){
         <img className="document-logo" src="/norvin-logo-web.jpg" alt="NORVIN GROUP LLC"/>
         <div className="document-title"><h2>{label}</h2></div>
       </header>
-      {type==="invoice"&&<div className={"invoice-stamp stamp-"+paymentStatus} aria-label={"Invoice status: "+paymentStatus}>{paymentStatus==="paid"?"PAID":paymentStatus==="partial"?"PARTIALLY PAID":paymentStatus==="cancelled"?"CANCELLED":"PENDING PAYMENT"}</div>}
+      {type==="invoice"&&<div className={"invoice-stamp stamp-"+resolvedPaymentStatus} aria-label={"Invoice status: "+resolvedPaymentStatus}>{resolvedPaymentStatus==="paid"?"PAID":resolvedPaymentStatus==="partial"?"PARTIALLY PAID":resolvedPaymentStatus==="cancelled"?"CANCELLED":"PENDING PAYMENT"}</div>}
       <div className="document-meta">
         <div><small>DOCUMENT #</small><strong>{number||"—"}</strong></div>
         <div><small>DATE</small><strong>{date}</strong></div>
@@ -151,6 +152,7 @@ export default function DocumentsModule({supabase}){
       {terms.trim()&&<div className="document-terms"><strong>TERMS & CONDITIONS</strong><p>{terms}</p></div>}
       {["estimate","purchase-order","expense-report"].includes(type)&&<div className="document-signatures"><div><span>AUTHORIZED BY</span><i></i><small>Signature / Date</small></div><div><span>ACKNOWLEDGED BY</span><i></i><small>Signature / Date</small></div></div>}
       {type==="payroll-statement"&&<div className="alert"><strong>UNVERIFIED PAYROLL DRAFT — NOT AN OFFICIAL PAY STUB</strong></div>}
+      <div className="corporate-seal" aria-label="NORVIN GROUP LLC corporate stamp"><span className="seal-top">NORVIN GROUP LLC</span><span className="seal-mark">⌂</span><span className="seal-center">NORVIN GROUP LLC</span><span className="seal-bottom">OHIO, USA</span></div>
       <footer><strong>NORVIN GROUP LLC</strong><span>SOLIDITY AND TRUST IN EVERY PROJECT</span><small>{contact||"Generated by NORVIN GROUP LLC Financial System"}</small></footer>
     </article>
   </section>;
