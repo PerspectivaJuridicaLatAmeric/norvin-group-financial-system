@@ -185,3 +185,54 @@ iframe[src*="netlify"],iframe[title*="Netlify"],iframe[id*="netlify"],iframe[cla
 .print-sheet .estimate-approval-seal{grid-column:2;justify-self:center;align-self:center}
 @media(max-width:600px){.print-sheet .estimate-approval-block{grid-template-columns:minmax(0,1fr) 100px!important;column-gap:8px!important}.print-sheet .estimate-approval-seal img{width:88px;height:88px}}
 @media print{.print-sheet .estimate-approval-block{grid-template-columns:minmax(0,1fr) 120px!important;break-inside:avoid!important;page-break-inside:avoid!important}}
+
+
+/* NORVIN GROUP LLC — signature corporate document design */
+.print-sheet{
+  --doc-ink:#172c39;--doc-deep:#153e48;--doc-gold:#bc9c61;
+  position:relative!important;isolation:isolate;
+  color:var(--doc-ink)!important;
+  background:linear-gradient(145deg,#f3f7f8 0 110px,#fff 110px 100%)!important;
+  border:1px solid #d6e0e3!important;border-top:9px solid var(--doc-deep)!important;
+  border-radius:15px!important;padding:30px 36px!important;
+  box-shadow:0 20px 45px rgba(17,48,59,.14)!important;
+}
+.print-sheet:before{content:"";position:absolute;right:0;top:0;width:100%;height:6px;border-top:3px solid var(--doc-gold);border-radius:0;background:transparent!important;pointer-events:none}
+.print-sheet .document-header{display:flex!important;align-items:center!important;gap:24px!important;justify-content:space-between!important;margin:0 0 16px!important;padding:0 0 16px!important;border-bottom:2px solid var(--doc-gold)!important}
+.print-sheet .document-logo{width:285px!important;max-width:54%!important;height:auto!important;object-fit:contain}
+.print-sheet .document-title h2{font-family:"Aptos Display","Segoe UI",Arial,sans-serif!important;font-size:26px!important;font-weight:850!important;letter-spacing:.16em!important;color:var(--doc-deep)!important;margin:0!important}
+.print-sheet .document-brandline{color:#8c703f!important;letter-spacing:.17em!important;margin:0 0 15px!important}
+.print-sheet .document-meta{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;background:#f0f5f6!important;border:1px solid #d4e1e3!important;border-radius:10px!important;margin-bottom:14px!important;overflow:hidden}
+.print-sheet .document-meta>div{background:transparent!important;border:0!important;border-right:1px solid #d4e1e3!important;border-bottom:1px solid #d4e1e3!important;padding:12px 15px!important;border-radius:0!important}
+.print-sheet .document-meta small,.print-sheet .document-party small{font-size:9px!important;letter-spacing:.14em!important;color:#59747d!important}
+.print-sheet .document-meta strong{display:block;font-size:13px!important;color:var(--doc-deep)!important}
+.print-sheet .document-reference{background:#f7f9f9!important;border-left:4px solid var(--doc-gold)!important;border-radius:5px!important;margin-bottom:13px!important;padding:10px 14px!important}
+.print-sheet .document-party{background:#fff!important;border:1px solid #dbe4e6!important;border-left:5px solid var(--doc-gold)!important;box-shadow:0 3px 10px #173c4810!important;border-radius:9px!important;padding:13px 17px!important;margin:0 0 15px!important}
+.print-sheet .document-party strong{display:block;font-size:15px!important;color:var(--doc-deep)!important;margin-top:4px}
+.print-sheet .document-items{border:1px solid #cfdbde!important;border-radius:9px!important;box-shadow:0 4px 13px #123b4610!important;overflow:hidden!important;margin:0 0 10px!important}
+.print-sheet .document-items .item-head{background:linear-gradient(100deg,#163f49,#2c6370)!important;color:#fff!important;padding:12px 13px!important;font-size:10px!important;letter-spacing:.12em!important}
+.print-sheet .document-items .item-row{background:#fff!important;padding:11px 13px!important;border-bottom:1px solid #e3eaec!important}
+.print-sheet .document-items .item-row:nth-child(odd){background:#f2f7f8!important}
+.print-sheet .document-totals{border-top:2px solid #d2dfe1!important;padding-top:7px!important;margin:9px 0!important}
+.print-sheet .document-amount{background:linear-gradient(105deg,#153e48,#276473)!important;color:#fff!important;border:0!important;border-left:5px solid var(--doc-gold)!important;border-radius:9px!important;box-shadow:0 5px 14px #17434b2a!important;margin:8px 0 12px auto!important;padding:12px 16px!important}
+.print-sheet .document-amount span,.print-sheet .document-amount strong{color:#fff!important}
+.print-sheet .document-amount strong{font-size:21px!important}
+.print-sheet .document-notes,.print-sheet .document-terms{background:#f5f8f9!important;border:1px solid #dce5e7!important;border-left:4px solid var(--doc-gold)!important;border-radius:8px!important;padding:10px 13px!important;margin-top:10px!important}
+.print-sheet .estimate-approval-block{background:#f3f7f8!important;border:1px solid #d0dfe2!important;border-left:4px solid var(--doc-gold)!important;border-radius:10px!important;box-shadow:0 3px 10px #143c4910!important}
+.print-sheet footer{background:#f0f5f6!important;border-top:3px solid var(--doc-gold)!important;color:#173e48!important}
+@media(max-width:600px){.print-sheet{padding:19px 14px!important}.print-sheet .document-logo{max-width:51%!important}.print-sheet .document-title h2{font-size:17px!important;letter-spacing:.09em!important}.print-sheet .document-header{gap:9px!important}.print-sheet footer{margin-left:-14px!important;margin-right:-14px!important}}
+@media print{
+ @page{size:letter;margin:.35in}
+ .print-sheet{box-shadow:none!important;border:0!important;border-top:6px solid #153e48!important;border-radius:0!important;padding:12px 17px!important;max-width:none!important;width:100%!important;background:#fff!important;break-inside:auto!important}
+ .print-sheet .document-header{padding-bottom:10px!important;margin-bottom:10px!important}
+ .print-sheet .document-logo{width:2.6in!important}
+ .print-sheet .document-title h2{font-size:19px!important}
+ .print-sheet .document-meta>div{padding:7px 11px!important}
+ .print-sheet .document-party{padding:8px 12px!important;margin-bottom:9px!important}
+ .print-sheet .document-items .item-head,.print-sheet .document-items .item-row{padding:7px 10px!important}
+ .print-sheet .document-amount{padding:9px 12px!important}
+ .print-sheet .estimate-approval-block{padding:7px 10px!important;margin:8px 0!important}
+ .print-sheet .estimate-approval-seal img{width:85px!important;height:85px!important}
+ .print-sheet footer{margin:9px -17px -12px!important;padding:8px 17px!important}
+ .print-sheet .document-items .item-head,.print-sheet .document-amount,.print-sheet .document-meta,.print-sheet .document-party,.print-sheet .estimate-approval-block,.print-sheet footer{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+}
