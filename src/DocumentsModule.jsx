@@ -1,4 +1,5 @@
 import React from "react";
+import html2pdf from "html2pdf.js";
 
 const TYPES = [
   ["estimate","Estimate"],
@@ -126,9 +127,7 @@ export default function DocumentsModule({supabase,initialType="estimate",initial
     try{
       const sheet=document.querySelector(".norvin-premium-invoice");
       if(!sheet)throw new Error("Invoice preview unavailable.");
-      const {default:html2pdf}=await import("html2pdf.js");
       const blob=await html2pdf().set({margin:0,filename:(documentNumber||"invoice")+".pdf",html2canvas:{scale:2,useCORS:true},jsPDF:{unit:"in",format:"letter",orientation:"portrait"}}).from(sheet).outputPdf("blob");
-      if(!sourceId)throw new Error("Save the invoice before sending it.");
       const bytes=new Uint8Array(await blob.arrayBuffer());
       let binary="";
       for(let i=0;i<bytes.length;i+=8192)binary+=String.fromCharCode(...bytes.subarray(i,i+8192));
@@ -140,7 +139,7 @@ export default function DocumentsModule({supabase,initialType="estimate",initial
       if(!data?.sent)throw new Error(data?.error||"The email service did not confirm the send.");
       setSavedMessage("Factura enviada correctamente a "+emailTo.trim()+".");
 
-    }catch(e){if(e?.name!=="AbortError")setError(e.message||"Unable to prepare invoice email.");}
+    }catch(e){if(e?.name!=="AbortError")setError(e.message||"No se pudo enviar la factura. Verifica la configuración del correo.");}
     finally{setEmailSending(false);}
   }
   function printDocument(){
@@ -180,7 +179,7 @@ export default function DocumentsModule({supabase,initialType="estimate",initial
       {type==="payroll-statement"&&<div className="notice" role="status">Manual draft only. This document does not calculate or certify payroll taxes, deductions, or net pay. Do not use it as an official pay stub.</div>}
       <div className="formactions"><button type="button" onClick={saveDocument} disabled={saving}>{saving?"Saving…":sourceId?"Update Record":"Save / Register"}</button><button className="primary" type="button" onClick={printDocument}>Print / Save PDF</button></div>
     </div>}
-    {onClose&&<div className="formactions no-print"><button className="primary" type="button" onClick={printDocument}>Print / Save PDF</button>{type==="invoice"&&<button type="button" onClick={()=>setEmailOpen(v=>!v)}>Attach to Email</button>}</div>}
+    {onClose&&<div className="formactions no-print"><button className="primary" type="button" onClick={printDocument}>Print / Save PDF</button>{type==="invoice"&&<button type="button" onClick={()=>setEmailOpen(v=>!v)}>Enviar por correo</button>}</div>}
     {type==="invoice"&&emailOpen&&<div className="no-print npi-email-form"><label>Recipient email<input type="email" value={emailTo} onChange={e=>setEmailTo(e.target.value)} placeholder="customer@example.com" autoComplete="email"/></label><button type="button" disabled={emailSending} onClick={attachInvoiceEmail}>{emailSending?"Enviando…":"Enviar"}</button><p>The PDF invoice is sent to the entered email address when you press Enviar.</p></div>}
     {savedMessage&&onClose&&<div className="notice no-print" role="status">{savedMessage}</div>}
     {error&&onClose&&<div className="alert no-print" role="alert">{error}</div>}
