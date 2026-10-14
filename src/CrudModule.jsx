@@ -1,3 +1,4 @@
+import DocumentsModule from "./DocumentsModule.jsx";
 import React, { useEffect, useState } from "react";
 
 export default function CrudModule({ supabase, table, config, initialRows = [], loadError = "" }) {
@@ -7,6 +8,8 @@ export default function CrudModule({ supabase, table, config, initialRows = [], 
   const [editingId, setEditingId] = useState(null);
   const [message, setMessage] = useState("");
   const [busy,setBusy]=useState(false);
+  const [documentAction,setDocumentAction]=useState(null);
+  const isFinancialDocument=table==="invoices"||table==="estimates";
 
   useEffect(() => setRows(initialRows), [initialRows]);
 
@@ -54,7 +57,9 @@ export default function CrudModule({ supabase, table, config, initialRows = [], 
   }
 
   async function remove(id) {
-    if (!window.confirm("Delete this record?")) return;
+    const row=rows.find(r=>String(r.id)===String(id));
+    const ref=row?.invoice_number||row?.estimate_number||String(id);
+    if (!window.confirm(`Permanently delete ${ref}? This cannot be undone. Linked payments or other records may prevent deletion.`)) return;
     if(busy)return;
     setBusy(true);
     let deletion;
@@ -65,6 +70,8 @@ export default function CrudModule({ supabase, table, config, initialRows = [], 
     setRows(current => current.filter(row => row.id !== id));
     setMessage("Record deleted.");
   }
+
+  if(documentAction&&isFinancialDocument)return <DocumentsModule supabase={supabase} key={String(documentAction.id)} initialType={table==="invoices"?"invoice":"estimate"} initialRecordId={documentAction.id} autoPrint={documentAction.print} onClose={()=>setDocumentAction(null)}/>;
 
   return <section>
     <div className="toolbar"><div><strong>{config.title}</strong><div className="muted">{rows.length} RECORDS</div></div></div>
@@ -82,7 +89,7 @@ export default function CrudModule({ supabase, table, config, initialRows = [], 
         {config.fields.map(f => <th key={f.key}>{f.label}</th>)}<th>Actions</th>
       </tr></thead><tbody>{rows.map(row => <tr key={row.id}>
         {config.fields.map(f => <td key={f.key}>{String(row[f.key] ?? "")}</td>)}
-        <td><button type="button" disabled={busy} onClick={() => edit(row)}>Edit</button> <button type="button" disabled={busy} onClick={() => remove(row.id)}>Delete</button></td>
+        <td>{isFinancialDocument&&<><button type="button" onClick={()=>setDocumentAction({id:row.id,print:false})}>View</button> <button type="button" onClick={()=>setDocumentAction({id:row.id,print:true})}>Print</button> </>}<button type="button" disabled={busy} onClick={() => edit(row)}>Edit</button> <button type="button" disabled={busy} onClick={() => remove(row.id)}>Delete</button></td>
       </tr>)}</tbody></table>}
     </div>}
   </section>;
