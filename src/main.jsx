@@ -79,7 +79,7 @@ function App(){
 
   return <div className="layout">
     <aside>
-      <BrandLogo compact/><h2>NORVIN GROUP<br/>LLC</h2><div className="muted">FINANCIAL SYSTEM</div>
+      <BrandLogo/><div className="muted">FINANCIAL SYSTEM</div>
       {modules.map(([id,label])=><button key={id} className={"nav "+(section===id?"active":"")} onClick={()=>setSection(id)}>{label}</button>)}
       <button className="nav" onClick={()=>setRecovering(true)}>Change password</button>
       <button className="nav logout" onClick={()=>supabase.auth.signOut()}>Sign out</button>
@@ -110,7 +110,7 @@ function Login(){
     catch(err){setMessage(err.message||"Unable to sign in. Please try again.");}
     finally{setSubmitting(false);}
   }
-  return <div className="login"><form className="panel" onSubmit={submit}><BrandLogo compact/><h1>NORVIN GROUP LLC</h1><p>Financial Management System</p>
+  return <div className="login"><form className="panel" onSubmit={submit}><BrandLogo/><h1>Welcome to NORVIN GROUP LLC</h1><p>Construction · Electrical · General Services</p>
     <label>Email<input type="email" value={email} onChange={e=>setEmail(e.target.value)} required/></label>
     <label style={{display:resetMode?"none":undefined}}>Password<input type="password" autoComplete="current-password" value={password} onChange={e=>setPassword(e.target.value)} required={!resetMode} disabled={resetMode}/></label>
     {message&&<div className="alert">{message}</div>}<button className="primary" disabled={submitting}>{submitting?"Please wait…":resetMode?"Send recovery email":"Sign in"}</button>
@@ -158,7 +158,7 @@ function Dashboard({setSection}){
     ["Control center",[["documents","Documents","Printable business records"],["reports","Reports","Financial summaries"]]]
   ];
   return <section className="dashboard-home">
-    <div className="hero"><div><div className="eyebrow">NORVIN GROUP LLC</div><h2>Financial Management System</h2><p>Central workspace for company operations, billing, expenses, workforce records, documents and reporting.</p></div><BrandLogo compact/></div>
+    <div className="hero"><div><div className="eyebrow">NORVIN GROUP LLC</div><h2>Business Dashboard</h2><p>Overview of company operations, billing, expenses, workforce records, documents and reporting.</p></div><BrandLogo/></div>
     {groups.map(([heading,items])=><div key={heading} className="dashboard-group"><div className="section-heading"><h3>{heading}</h3></div><div className="grid">{items.map(([id,label,desc])=><button className="tile" key={id} onClick={()=>setSection(id)}><strong>{label}</strong><span>{desc}</span><small>Open module →</small></button>)}</div></div>)}
   </section>
 }
