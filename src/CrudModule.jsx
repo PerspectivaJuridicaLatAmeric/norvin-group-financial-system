@@ -22,6 +22,13 @@ export default function CrudModule({ supabase, table, config, initialRows = [], 
     if(busy)return;
     setBusy(true);
     const payload = Object.fromEntries(Object.entries(form).filter(([, value]) => value !== ""));
+    for(const field of config.fields){
+      if(field.type==="number" && payload[field.key]!==undefined){
+        const value=Number(payload[field.key]);
+        if(!Number.isFinite(value)|| (field.min!==undefined&&value<field.min)){setMessage(`Invalid value for ${field.label}.`);setBusy(false);return;}
+        payload[field.key]=value;
+      }
+    }
     try {
     if (!editingId) {
       const { data: authData, error: authError } = await supabase.auth.getUser();
@@ -65,7 +72,7 @@ export default function CrudModule({ supabase, table, config, initialRows = [], 
     <div className="toolbar"><div><strong>{config.title}</strong><div className="muted">{rows.length} RECORDS</div></div></div>
     <form className="formgrid" onSubmit={save}>
       {config.fields.map(field => <label key={field.key}>{field.label}
-        <input type={field.type || "text"} required={field.required} {...(field.type === "checkbox" ? {checked:Boolean(form[field.key]),onChange:e=>setForm(v=>({...v,[field.key]:e.target.checked}))} : {value:form[field.key],onChange:e=>setForm(v=>({...v,[field.key]:e.target.value}))})}/>
+        <input type={field.type || "text"} required={field.required} min={field.min} step={field.step} {...(field.type === "checkbox" ? {checked:Boolean(form[field.key]),onChange:e=>setForm(v=>({...v,[field.key]:e.target.checked}))} : {value:form[field.key],onChange:e=>setForm(v=>({...v,[field.key]:e.target.value}))})}/>
       </label>)}
       <div className="formactions"><button className="primary" disabled={busy}>{busy?"Saving…":editingId ? "Update" : "Add"}</button>
         {editingId && <button type="button" onClick={() => {setEditingId(null);setForm(empty)}}>Cancel</button>}
