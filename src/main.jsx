@@ -181,7 +181,7 @@ function DataModule({title,rows,error,loading}){
   const columns=rows.length?Object.keys(rows[0]):[];
   if(loading && !["Documents","Reports"].includes(title)) return <div className="notice">Loading {title.toLowerCase()} records…</div>;
   if(title==="Payroll") return <PayrollModule rows={rows} error={error}/>;
-  if(title==="Documents") return <DocumentsModule/>;
+  if(title==="Documents") return <DocumentsModule supabase={supabase}/>;
   if(title==="Reports") return <ReportsModule supabase={supabase}/>;
   if(title==="Clients") return <CrudModule supabase={supabase} table="clients" config={moduleConfigs.clients} initialRows={rows} loadError={error}/>;
   if(title==="Projects") return <CrudModule supabase={supabase} table="projects" config={moduleConfigs.projects} initialRows={rows} loadError={error}/>;
