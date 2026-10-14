@@ -21,7 +21,7 @@ export const moduleConfigs = {
     fields: [
       { key: "invoice_number", label: "Invoice number", required: true },
       { key: "client_id", label: "Client ID" },
-      { key: "amount", label: "Amount", type: "number", required: true },
+      { key: "amount", label: "Amount", type: "number", min: 0, step: "0.01", required: true },
       { key: "status", label: "Status" },
       { key: "due_date", label: "Due date", type: "date" }
     ]
@@ -55,7 +55,7 @@ export const moduleConfigs = {
       { key: "employment_status", label: "Employment status" },
       { key: "pay_frequency", label: "Pay frequency" },
       { key: "federal_filing_status", label: "Federal filing status" },
-      { key: "w4_step3", label: "W-4 Step 3", type: "number" },
+      { key: "w4_step3", label: "W-4 Step 3", type: "number", min: 0, step: "0.01" },
       { key: "w4_step4a", label: "W-4 Step 4(a)", type: "number" },
       { key: "w4_step4b", label: "W-4 Step 4(b)", type: "number" },
       { key: "w4_step4c", label: "W-4 Step 4(c)", type: "number" },
