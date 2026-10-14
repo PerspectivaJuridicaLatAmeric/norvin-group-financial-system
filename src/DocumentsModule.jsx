@@ -101,9 +101,9 @@ export default function DocumentsModule({supabase}){
     }catch(e){setError(e.message||"Unable to register document.");}finally{setSaving(false);}
   }
   function printDocument(){
-    const calculatedOk=["invoice","estimate","purchase-order"].includes(type)&&(items.length>0||(rate!==""&&Number.isFinite(Number(rate))&&Number(rate)>=0&&Number(qty)>0));
-    if(!number.trim()||!name.trim()||!date||(!validAmount&&!calculatedOk)){setError("Enter a document number, recipient, valid date and a valid amount or line-item rate.");return;}
-    setError("");window.print();
+    // Printing a draft must not depend on database registration or required fields.
+    setError("");
+    window.requestAnimationFrame(()=>window.print());
   }
   const label=TYPES.find(([key])=>key===type)?.[1] || "Document";
   const partyLabel=type==="invoice"||type==="estimate"?"Bill To":type==="purchase-order"?"Vendor":type==="payroll-statement"?"Employee":"Payee";
@@ -145,14 +145,12 @@ export default function DocumentsModule({supabase}){
         <div><small>DATE</small><strong>{date}</strong></div>
         <div><small>STATUS</small><strong>{status}</strong></div>
       </div>
-      {reference&&<div className="document-reference"><span>PROJECT / REFERENCE</span><strong>{reference}</strong></div>}
       {reference&&<div className="document-reference"><small>PROJECT / REFERENCE</small><strong>{reference}</strong></div>}
       <div className="document-party"><small>{partyLabel.toUpperCase()}</small><strong>{name||"—"}</strong>{address&&<span>{address}</span>}</div>
       {showLineItems&&<div className="document-items"><div className="item-head"><span>Description</span><span>Qty</span><span>Rate</span><span>Amount</span></div>{[...items,...(description.trim()&&currentLine!==null?[{description,qty:Number(qty),rate:Number(rate)}]:[])].map((item,i)=><div className="item-row" key={i}><strong>{item.description}</strong><span>{item.qty}</span><span>{new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"}).format(item.rate)}</span><strong>{new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"}).format(item.qty*item.rate)}</strong></div>)}{items.length===0&&currentLine===null&&<div className="item-row"><strong>{description||"Service / project work"}</strong><span>—</span><span>—</span><strong>—</strong></div>}</div>}
       {showLineItems&&lineTotal!==null&&<div className="document-totals"><div><span>Subtotal</span><strong>{new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"}).format(lineTotal)}</strong></div><div><span>Tax ({taxRate||0}%)</span><strong>{new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"}).format(salesTax)}</strong></div></div>}
       <div className="document-amount"><span>{amountLabel}</span><strong>{new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"}).format(displayAmount)}</strong></div>
       {type==="invoice"&&sourceId&&<div className="invoice-balance"><div><span>Payments Received</span><strong>{new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"}).format(paidTotal)}</strong></div><div><span>Balance Due</span><strong>{new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"}).format(balanceDue)}</strong></div></div>}
-      {terms.trim()&&<div className="document-terms"><strong>TERMS &amp; INSTRUCTIONS</strong><p>{terms}</p></div>}
       {notes.trim()&&<div className="document-notes"><strong>Notes / Description</strong><p>{notes}</p></div>}
       {terms.trim()&&<div className="document-terms"><strong>TERMS & CONDITIONS</strong><p>{terms}</p></div>}
       {["estimate","purchase-order","expense-report"].includes(type)&&<div className="document-signatures"><div><span>AUTHORIZED BY</span><i></i><small>Signature / Date</small></div><div><span>ACKNOWLEDGED BY</span><i></i><small>Signature / Date</small></div></div>}
