@@ -16,8 +16,6 @@ export default function DocumentsModule({supabase}){
   const [date,setDate]=React.useState(new Date().toISOString().slice(0,10));
   const [notes,setNotes]=React.useState("");
   const [paymentStatus,setPaymentStatus]=React.useState("pending");
-  const [terms,setTerms]=React.useState("Payment terms as agreed in writing.");
-  const [reference,setReference]=React.useState("");
   const [contact,setContact]=React.useState("");
   const [terms,setTerms]=React.useState("Payment terms and project conditions as agreed in writing.");
   const [reference,setReference]=React.useState("");
@@ -65,6 +63,13 @@ export default function DocumentsModule({supabase}){
     if(type==="estimate"){setNumber(r.estimate_number||"");setName(client?.name||"");setAddress(client?.address||"");setAmount(r.amount??"");setDate((r.valid_until||new Date().toISOString().slice(0,10)).slice(0,10));setDescription(r.description||r.notes||project?.name||"");setRate("");setQty("1");setNotes(r.notes||"");}
     if(type==="expense-report"){setNumber(r.expense_number||String(r.id).slice(0,8));setName(r.vendor||"");setAmount(r.amount??"");setDate((r.expense_date||new Date().toISOString().slice(0,10)).slice(0,10));setDescription(r.description||"");}
   }
+  const prefixes={"invoice":"INV","estimate":"EST","purchase-order":"PO","payroll-statement":"PAY","expense-report":"EXP"};
+  const prefix=prefixes[type];
+  const year=new Date().getFullYear();
+  const field=type==="invoice"?"invoice_number":type==="estimate"?"estimate_number":"expense_number";
+  const highest=sourceRows.reduce((max,row)=>{const match=String(row[field]||"").match(new RegExp("^"+prefix+"-"+year+"-(\\d+)$"));return match?Math.max(max,Number(match[1])):max;},0);
+  const generatedNumber=prefix+"-"+year+"-"+String(highest+1).padStart(5,"0");
+  const documentNumber=sourceId?number:generatedNumber;
   const selectedSource=sourceRows.find(x=>String(x.id)===String(sourceId));
   const showLineItems=["invoice","estimate","purchase-order"].includes(type);
   const currentLine=showLineItems&&rate!=="" ? Math.max(0,Number(qty)||0)*Math.max(0,Number(rate)||0) : null;
@@ -79,14 +84,14 @@ export default function DocumentsModule({supabase}){
   async function saveDocument(){
     if(!supabase)return;
     const calculatedOk=showLineItems&&(items.length>0||(rate!==""&&Number.isFinite(Number(rate))&&Number(rate)>=0&&Number(qty)>0));
-    if(!number.trim()||!name.trim()||!date||(!validAmount&&!calculatedOk)){setError("Enter a document number, recipient, valid date and amount.");return;}
+    if(!documentNumber.trim()||!name.trim()||!date||(!validAmount&&!calculatedOk)){setError("Enter a document number, recipient, valid date and amount.");return;}
     const table=type==="invoice"?"invoices":type==="estimate"?"estimates":type==="expense-report"?"expenses":null;
     if(!table){setError("Saving this document type will be enabled with its dedicated register.");return;}
     setSaving(true);setError("");setSavedMessage("");
     try{
       let payload={amount:displayAmount};
-      if(type==="invoice")payload={...payload,invoice_number:number,due_date:date,description,notes};
-      if(type==="estimate")payload={...payload,estimate_number:number,valid_until:date,description,notes};
+      if(type==="invoice")payload={...payload,invoice_number:documentNumber,due_date:date,description,notes};
+      if(type==="estimate")payload={...payload,estimate_number:documentNumber,valid_until:date,description,notes};
       if(type==="expense-report")payload={...payload,expense_date:date,vendor:name,description:description||notes};
       const existing=sourceId?sourceRows.find(x=>String(x.id)===String(sourceId)):null;
       const res=existing?await supabase.from(table).update(payload).eq("id",existing.id).select().single():await supabase.from(table).insert(payload).select().single();
@@ -108,7 +113,7 @@ export default function DocumentsModule({supabase}){
     <div className="formgrid no-print">
       {sourceRows.length>0&&<label className="wide">Use saved {type==="invoice"?"invoice":type==="estimate"?"estimate":"expense"}<select value={sourceId} onChange={e=>loadSavedRecord(e.target.value)} disabled={sourceLoading}><option value="">Select a saved record…</option>{sourceRows.map(r=><option key={r.id} value={r.id}>{r.invoice_number||r.estimate_number||r.description||r.id} — {r.amount!=null?new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"}).format(Number(r.amount)||0):""}</option>)}</select></label>}
       <label>Document type<select value={type} onChange={e=>setType(e.target.value)}>{TYPES.map(([k,v])=><option key={k} value={k}>{v}</option>)}</select></label>
-      <label>Document number<input value={number} onChange={e=>setNumber(e.target.value)}/></label>
+      <label>Document number<input value={documentNumber} readOnly title="System-generated reference"/></label>
       <label>{partyLabel}<input value={name} onChange={e=>setName(e.target.value)}/></label>
       <label>Address<input value={address} onChange={e=>setAddress(e.target.value)} placeholder="Street, city, state, ZIP"/></label>
       {showLineItems&&<><label className="wide">Service / Item<input value={description} onChange={e=>setDescription(e.target.value)} placeholder="Description of work or service"/></label><label>Quantity<input type="number" min="0" step="1" value={qty} onChange={e=>setQty(e.target.value)}/></label><label>Rate<input type="number" min="0" step="0.01" value={rate} onChange={e=>setRate(e.target.value)}/></label></>}
@@ -136,7 +141,7 @@ export default function DocumentsModule({supabase}){
       </header>
       {type==="invoice"&&<div className={"invoice-stamp stamp-"+resolvedPaymentStatus} aria-label={"Invoice status: "+resolvedPaymentStatus}>{resolvedPaymentStatus==="paid"?"PAID":resolvedPaymentStatus==="partial"?"PARTIALLY PAID":resolvedPaymentStatus==="cancelled"?"CANCELLED":"PENDING PAYMENT"}</div>}
       <div className="document-meta">
-        <div><small>DOCUMENT #</small><strong>{number||"—"}</strong></div>
+        <div><small>DOCUMENT #</small><strong>{documentNumber||"—"}</strong></div>
         <div><small>DATE</small><strong>{date}</strong></div>
         <div><small>STATUS</small><strong>{status}</strong></div>
       </div>
