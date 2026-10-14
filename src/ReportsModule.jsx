@@ -6,6 +6,7 @@ const sum = rows => rows.reduce((total,row)=>total + Number(row.amount || 0),0);
 export default function ReportsModule({supabase}){
   const [data,setData]=useState({payments:[],expenses:[],contractor_payments:[]});
   const [loading,setLoading]=useState(true);
+  const [asOf,setAsOf]=useState(null);
   const [error,setError]=useState("");
 
   useEffect(()=>{
@@ -28,7 +29,7 @@ export default function ReportsModule({supabase}){
         const [payments,expenses,contractors]=await Promise.all([
           loadAll("payments"),loadAll("expenses"),loadAll("contractor_payments")
         ]);
-        if(active) setData({payments,expenses,contractor_payments:contractors});
+        if(active){setData({payments,expenses,contractor_payments:contractors});setAsOf(new Date());}
       } catch(e){if(active)setError(e.message||"Unable to load reports");}
       finally{if(active)setLoading(false);}
     })();
@@ -58,6 +59,7 @@ export default function ReportsModule({supabase}){
     <div className="toolbar"><div><strong>Reports</strong><div className="muted">BUSINESS ACTIVITY SUMMARY</div></div>
       <div className="no-print"><button type="button" disabled={loading||Boolean(error)} onClick={exportCsv}>Export CSV</button> <button className="primary" disabled={loading||Boolean(error)} onClick={()=>window.print()}>Print / Save PDF</button></div>
     </div>
+    {asOf&&!loading&&!error&&<p className="muted">Report generated: {asOf.toLocaleString("en-US")}</p>}
     {loading&&<div className="notice">Loading all financial records…</div>}
     {error&&<div className="alert">Report totals are unavailable: {error}</div>}
     {!loading&&!error&&<div className="notice">Totals include all loaded records. Payroll, taxes and outstanding invoices are not included in operating balance.</div>}
