@@ -9,9 +9,14 @@ export default function CrudModule({ supabase, table, config, initialRows = [], 
   const [message, setMessage] = useState("");
   const [busy,setBusy]=useState(false);
   const [documentAction,setDocumentAction]=useState(null);
+  const [clientOptions,setClientOptions]=useState([]);
+  const [projectOptions,setProjectOptions]=useState([]);
+  useEffect(()=>{if(table!=="estimates")return;let active=true;Promise.all([supabase.from("clients").select("id,name,client_sequence").limit(500),supabase.from("projects").select("id,name,project_sequence,client_id").limit(500)]).then(([c,p])=>{if(active){setClientOptions(c.data||[]);setProjectOptions(p.data||[]);}});return()=>{active=false};},[supabase,table]);
   const isFinancialDocument=table==="invoices"||table==="estimates";
   const isClients=table==="clients";
   const isProjects=table==="projects";
+  const isEstimates=table==="estimates";
+  const estimateLabel=(key,value)=>{const choices=key==="client_id"?clientOptions:projectOptions;const item=choices.find(x=>String(x.id)===String(value));return item?(key==="client_id"?"CLI-":"PRJ-")+String(key==="client_id"?item.client_sequence:item.project_sequence).padStart(5,"0")+" — "+item.name:(value||"");};
   const projectCode=row=>row.project_sequence!=null?"PRJ-"+String(row.project_sequence).padStart(5,"0"):"Pending assignment";
   const clientCode=row=>row.client_sequence!=null?"CLI-"+String(row.client_sequence).padStart(5,"0"):"Pending assignment";
 
@@ -31,6 +36,7 @@ export default function CrudModule({ supabase, table, config, initialRows = [], 
     if(busy)return;
     setBusy(true);
     const payload = Object.fromEntries(Object.entries(form).filter(([, value]) => value !== ""));
+    if(isEstimates&&!editingId){const year=new Date().getFullYear();const numbers=rows.map(r=>Number(String(r.estimate_number||"").match(new RegExp("^EST-"+year+"-(\\\\d+)$"))?.[1]||0));payload.estimate_number="EST-"+year+"-"+String(Math.max(0,...numbers)+1).padStart(5,"0");}
     for(const field of config.fields){
       if(field.type==="number" && payload[field.key]!==undefined){
         const value=Number(payload[field.key]);
@@ -82,9 +88,10 @@ export default function CrudModule({ supabase, table, config, initialRows = [], 
   return <section>
     <div className="toolbar"><div><strong>{config.title}</strong><div className="muted">{rows.length} RECORDS{isClients&&" · Automatic client numbering"}</div></div></div>
     <form className="formgrid" onSubmit={save}>
-      {config.fields.map(field => <label key={field.key}>{field.label}
-        {field.type==="select"?<select value={form[field.key]} required={field.required} onChange={e=>updateField(field,e.target.value)}><option value="">Select status…</option>{field.options.map(option=><option key={option.value} value={option.value}>{option.label}</option>)}</select>:<input type={field.type || "text"} required={field.required} min={field.min} step={field.step} {...(field.type === "checkbox" ? {checked:Boolean(form[field.key]),onChange:e=>setForm(v=>({...v,[field.key]:e.target.checked}))} : {value:form[field.key],onChange:e=>setForm(v=>({...v,[field.key]:e.target.value}))})}/>}
+      {config.fields.filter(field=>!(isEstimates&&field.key==="estimate_number")).map(field => <label key={field.key}>{field.label}
+        {isEstimates&&(field.key==="client_id"||field.key==="project_id")?<select value={form[field.key]} onChange={e=>updateField(field,e.target.value)}><option value="">Select {field.key==="client_id"?"client":"project"}…</option>{(field.key==="client_id"?clientOptions:projectOptions.filter(p=>!form.client_id||!p.client_id||String(p.client_id)===String(form.client_id))).map(item=><option key={item.id} value={item.id}>{estimateLabel(field.key,item.id)}</option>)}</select>:field.type==="select"?<select value={form[field.key]} required={field.required} onChange={e=>updateField(field,e.target.value)}><option value="">Select status…</option>{field.options.map(option=><option key={option.value} value={option.value}>{option.label}</option>)}</select>:<input type={field.type || "text"} required={field.required} min={field.min} step={field.step} {...(field.type === "checkbox" ? {checked:Boolean(form[field.key]),onChange:e=>setForm(v=>({...v,[field.key]:e.target.checked}))} : {value:form[field.key],onChange:e=>setForm(v=>({...v,[field.key]:e.target.value}))})}/>}
       </label>)}
+      {isEstimates&&<div className="muted">Estimate number is assigned automatically when you save.</div>}
       <div className="formactions"><button className="primary" disabled={busy}>{busy?"Saving…":editingId ? "Update" : "Add"}</button>
         {editingId && <button type="button" onClick={() => {setEditingId(null);setForm(empty)}}>Cancel</button>}
       </div>
@@ -94,7 +101,7 @@ export default function CrudModule({ supabase, table, config, initialRows = [], 
       {!rows.length ? <div className="empty">No records found.</div> : <table><thead><tr>
         {isClients&&<th>Client #</th>}{isProjects&&<th>Project #</th>}{config.fields.map(f => <th key={f.key}>{f.label}</th>)}<th>Actions</th>
       </tr></thead><tbody>{rows.map(row => <tr key={row.id}>
-        {isClients&&<td><strong>{clientCode(row)}</strong></td>}{isProjects&&<td><strong>{projectCode(row)}</strong></td>}{config.fields.map(f => <td key={f.key}>{f.type==="select"?(f.options.find(option=>option.value===row[f.key])?.label||String(row[f.key]??"")):String(row[f.key] ?? "")}</td>)}
+        {isClients&&<td><strong>{clientCode(row)}</strong></td>}{isProjects&&<td><strong>{projectCode(row)}</strong></td>}{config.fields.map(f => <td key={f.key}>{isEstimates&&(f.key==="client_id"||f.key==="project_id")?estimateLabel(f.key,row[f.key]):f.type==="select"?(f.options.find(option=>option.value===row[f.key])?.label||String(row[f.key]??"")):String(row[f.key] ?? "")}</td>)}
         <td>{isFinancialDocument&&<><button type="button" onClick={()=>setDocumentAction({id:row.id,print:false})}>View</button> <button type="button" onClick={()=>setDocumentAction({id:row.id,print:true})}>Print</button> </>}<button type="button" disabled={busy} onClick={() => edit(row)}>Edit</button> <button type="button" disabled={busy} onClick={() => remove(row.id)}>Delete</button></td>
       </tr>)}</tbody></table>}
     </div>}
