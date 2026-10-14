@@ -44,7 +44,7 @@ export default function CrudModule({ supabase, table, config, initialRows = [], 
     if(isEstimates){if(!payload.client_id){setMessage("Select a registered client.");setBusy(false);return;}if(!estimateItems.some(item=>item.description.trim()&&Number(item.quantity)>0&&Number(item.price)>=0&&item.price!=="")){setMessage("Add at least one service with description, quantity and price.");setBusy(false);return;}payload.line_items=estimateItems.filter(item=>item.description.trim()).map(item=>({description:item.description.trim(),quantity:Number(item.quantity),price:Number(item.price)}));payload.amount=estimateTotal;delete payload.estimate_number;delete payload.project_id;if(form.project_id)payload.project_id=form.project_id;else payload.project_id=null;}
     if(isInvoices&&!editingId&&!payload.invoice_number){
       const year=new Date().getFullYear();
-      const highest=rows.reduce((max,row)=>{const match=String(row.invoice_number||"").match(new RegExp("^INV-"+year+"-(\\\\d+)$"));return match?Math.max(max,Number(match[1])):max;},0);
+      const highest=rows.reduce((max,row)=>{const match=String(row.invoice_number||"").match(new RegExp("^INV-"+year+"-([0-9]+)$"));return match?Math.max(max,Number(match[1])):max;},0);
       payload.invoice_number="INV-"+year+"-"+String(highest+1).padStart(5,"0");
     }
     if(isInvoices){if(!payload.client_id){setMessage("Select a registered client.");setBusy(false);return;}payload.line_items=estimateItems.filter(item=>item.description.trim()).map(item=>({description:item.description.trim(),quantity:Number(item.quantity),price:Number(item.price)}));if(payload.line_items.length){payload.amount=invoiceItemsTotal;}payload.total=Number(payload.amount)||0;payload.project_id=payload.project_id||null;}
