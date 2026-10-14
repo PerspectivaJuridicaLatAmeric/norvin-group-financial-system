@@ -145,3 +145,19 @@ aside>.company-logo{padding:7px;margin:0 0 8px;border:0;max-width:224px}
 .document-authentication>div:first-child{text-align:right;display:flex;flex-direction:column;gap:4px}
 .document-authentication small{font-size:10px;letter-spacing:.04em}
 @media print{.print-sheet .corporate-seal-image{width:142px;height:142px;break-inside:avoid}}
+
+/* Premium commercial document typography and spacing */
+.print-sheet{font-family:"Aptos","Segoe UI",Arial,sans-serif!important;color:#17263b;line-height:1.5;letter-spacing:.005em;background:#fff;box-shadow:0 14px 40px rgba(18,38,62,.1);border:1px solid #e3e8ed;border-top:6px solid #174f58;padding:38px 42px}
+.print-sheet .document-header{display:flex;align-items:center;justify-content:space-between;gap:28px;border-bottom:2px solid #1a4c54;padding-bottom:22px;margin-bottom:26px}
+.print-sheet .document-title h2{font-family:Georgia,"Times New Roman",serif;font-size:25px;line-height:1.18;letter-spacing:.045em;color:#193e47;text-transform:uppercase;font-weight:700}
+.print-sheet .document-meta{background:#f3f7f8;border:1px solid #dce7e8;border-radius:8px;gap:0;overflow:hidden}
+.print-sheet .document-meta>div{padding:15px 17px;border-right:1px solid #dce7e8}
+.print-sheet .document-meta small,.print-sheet .document-party small{font-size:10px;letter-spacing:.13em;font-weight:800;color:#567078}
+.print-sheet .document-party{border-left:4px solid #b39b67;background:#fbfcfc;padding:16px 20px;margin:22px 0}
+.print-sheet .document-items .item-head{background:#1a4b52;color:white;text-transform:uppercase;font-size:10px;letter-spacing:.1em;padding:13px 12px}
+.print-sheet .document-items .item-row{padding:13px 12px;border-bottom:1px solid #e6ebee}
+.print-sheet .document-items .item-row:nth-child(odd){background:#f8fafb}
+.print-sheet .document-amount{background:#eef4f4;border-top:2px solid #1b555c;padding:16px 18px;margin-top:14px}
+.print-sheet .document-terms,.print-sheet .document-notes{background:#f9fafb;border:1px solid #e5e9ec;border-left:3px solid #b39b67;padding:13px 17px;margin-top:18px}
+.print-sheet footer{border-top:2px solid #174f58;padding-top:15px;margin-top:20px;font-size:11px}
+@media print{.print-sheet{box-shadow:none!important;border:0!important;border-top:5px solid #174f58!important;padding:16px 22px!important;max-width:none!important;width:100%!important;break-inside:auto}}
