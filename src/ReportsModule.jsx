@@ -5,24 +5,32 @@ const sum = rows => rows.reduce((total,row)=>total + Number(row.amount || 0),0);
 
 export default function ReportsModule({supabase}){
   const [data,setData]=useState({payments:[],expenses:[],contractor_payments:[]});
+  const [loading,setLoading]=useState(true);
   const [error,setError]=useState("");
 
   useEffect(()=>{
     let active=true;
     (async()=>{
-      const [payments,expenses,contractors]=await Promise.all([
-        supabase.from("payments").select("*").limit(500),
-        supabase.from("expenses").select("*").limit(500),
-        supabase.from("contractor_payments").select("*").limit(500)
-      ]);
-      const firstError=payments.error||expenses.error||contractors.error;
-      if(!active) return;
-      if(firstError) setError(firstError.message);
-      else setData({
-        payments:payments.data||[],
-        expenses:expenses.data||[],
-        contractor_payments:contractors.data||[]
-      });
+      setLoading(true);
+      setError("");
+      try {
+        // Fetch all pages so financial totals do not silently omit records after 500.
+        async function loadAll(table){
+          const result=[];
+          for(let offset=0;;offset+=500){
+            const {data:page,error}=await supabase.from(table).select("*").order("id",{ascending:true}).range(offset,offset+499);
+            if(error) throw error;
+            result.push(...(page||[]));
+            if(!page||page.length<500) break;
+          }
+          return result;
+        }
+        const [payments,expenses,contractors]=await Promise.all([
+          loadAll("payments"),loadAll("expenses"),loadAll("contractor_payments")
+        ]);
+        if(active) setData({payments,expenses,contractor_payments:contractors});
+      } catch(e){if(active)setError(e.message||"Unable to load reports");}
+      finally{if(active)setLoading(false);}
     })();
     return ()=>{active=false};
   },[supabase]);
@@ -37,8 +45,10 @@ export default function ReportsModule({supabase}){
     <div className="toolbar"><div><strong>Reports</strong><div className="muted">BUSINESS ACTIVITY SUMMARY</div></div>
       <button className="primary no-print" onClick={()=>window.print()}>Print / Save PDF</button>
     </div>
-    {error&&<div className="alert">{error}</div>}
-    <div className="cards">
+    {loading&&<div className="notice">Loading all financial records…</div>}
+    {error&&<div className="alert">Report totals are unavailable: {error}</div>}
+    {!loading&&!error&&<div className="notice">Totals include all loaded records. Payroll, taxes and outstanding invoices are not included in operating balance.</div>}
+    {!loading&&!error&&<><div className="cards">
       <div className="card"><span>Payments received</span><strong>{money(income)}</strong></div>
       <div className="card"><span>Business expenses</span><strong>{money(expenses)}</strong></div>
       <div className="card"><span>Contractor payments</span><strong>{money(contractors)}</strong></div>
@@ -52,6 +62,6 @@ export default function ReportsModule({supabase}){
         <tr><td><strong>Operating balance</strong></td><td>—</td><td><strong>{money(operatingBalance)}</strong></td></tr>
       </tbody></table>
     </div>
-    <p className="muted">Operating balance is a management summary, not taxable income or a tax return.</p>
+    <p className="muted">Operating balance is a management summary, not taxable income or a tax return.</p></>}
   </section>;
 }
