@@ -3,7 +3,7 @@
 const cents=n=>Math.round((n+Number.EPSILON)*100)/100;
 const money=(value,name)=>{if(typeof value!=="number"||!Number.isFinite(value)||value<0)throw new Error(name+" must be a nonnegative number");return cents(value)};
 export function createPayrollDraft2026({
- employeeId,payDate,grossPay,federal,ohio,fica,
+ employeeId,payDate,grossPay,federalTaxableWages=grossPay,socialSecurityTaxableWages=grossPay,medicareTaxableWages=grossPay,federal,ohio,fica,
  municipal,schoolDistrict,otherDeductions=0
 }){
  if(!employeeId||!/^2026-\d{2}-\d{2}$/.test(payDate||""))throw new Error("Employee and 2026 pay date required");
@@ -29,7 +29,7 @@ export function createPayrollDraft2026({
  const net=cents(gross-Object.values(deductions).reduce((a,b)=>a+b,0));
  if(net<0)throw new Error("Deductions exceed gross pay");
  return {
-  employee_id:employeeId,pay_date:payDate,gross_pay:gross,...deductions,net_pay:net,
+  employee_id:employeeId,pay_date:payDate,gross_pay:gross,federal_taxable_wages:money(Number(federalTaxableWages),"federal taxable wages"),social_security_taxable_wages:money(Number(socialSecurityTaxableWages),"Social Security taxable wages"),medicare_taxable_wages:money(Number(medicareTaxableWages),"Medicare taxable wages"),...deductions,net_pay:net,
   federal_rule_version:federal.tableVersion,ohio_rule_version:ohio.version,
   municipal_code:municipal.applies?municipal.code:null,
   school_district_code:schoolDistrict.applies?schoolDistrict.code:null,
