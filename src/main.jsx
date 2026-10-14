@@ -28,6 +28,8 @@ const key = import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPAB
 const recoveryOnArrival = new URLSearchParams(window.location.hash.slice(1)).get("type") === "recovery";
 const supabase = url && key ? createClient(url, key) : null;
 
+function BrandLogo({compact=false}){return <div className={compact?"company-logo compact":"company-logo"} aria-label="NORVIN GROUP LLC"><svg viewBox="0 0 92 78" aria-hidden="true"><path className="lg-gold" d="M8 67V42l16-12v25l22-17 22 17V30l16 12v25H68L46 50 24 67z"/><path className="lg-gray" d="M24 55V23l16-12v32z"/><path className="lg-navy" d="M46 38V5l16 12v34z"/><path className="lg-gold2" d="M40 43V12l6-7v33z"/><path className="lg-window" d="M41 58h5v5h-5zm7 0h5v5h-5zm-7 7h5v5h-5zm7 0h5v5h-5z"/></svg><div className="logo-copy"><strong>NORVIN</strong><span>GROUP LLC</span><small>SOLIDITY AND TRUST IN EVERY PROJECT</small></div></div>}
+
 function App(){
   const [recovering,setRecovering]=useState(recoveryOnArrival);
   const [section,setSection]=useState("dashboard");
@@ -66,7 +68,7 @@ function App(){
   if(loading) return <div className="login"><div className="panel"><h1>NORVIN GROUP LLC</h1><p>Loading financial system…</p></div></div>;
 
   if(!supabase) return <div className="login"><div className="panel">
-    <div className="brand">NG</div><h1>NORVIN GROUP LLC</h1>
+    <BrandLogo compact/><h1>NORVIN GROUP LLC</h1>
     <p>Financial Management System</p>
     <div className="notice">Supabase environment variables are not configured on this deployment. Add the project URL and publishable key to enable secure sign-in and company data.</div>
   </div></div>;
@@ -77,7 +79,7 @@ function App(){
 
   return <div className="layout">
     <aside>
-      <div className="brand">NG</div><h2>NORVIN GROUP<br/>LLC</h2><div className="muted">FINANCIAL SYSTEM</div>
+      <BrandLogo compact/><h2>NORVIN GROUP<br/>LLC</h2><div className="muted">FINANCIAL SYSTEM</div>
       {modules.map(([id,label])=><button key={id} className={"nav "+(section===id?"active":"")} onClick={()=>setSection(id)}>{label}</button>)}
       <button className="nav" onClick={()=>setRecovering(true)}>Change password</button>
       <button className="nav logout" onClick={()=>supabase.auth.signOut()}>Sign out</button>
@@ -108,7 +110,7 @@ function Login(){
     catch(err){setMessage(err.message||"Unable to sign in. Please try again.");}
     finally{setSubmitting(false);}
   }
-  return <div className="login"><form className="panel" onSubmit={submit}><div className="brand">NG</div><h1>NORVIN GROUP LLC</h1><p>Financial Management System</p>
+  return <div className="login"><form className="panel" onSubmit={submit}><BrandLogo compact/><h1>NORVIN GROUP LLC</h1><p>Financial Management System</p>
     <label>Email<input type="email" value={email} onChange={e=>setEmail(e.target.value)} required/></label>
     <label style={{display:resetMode?"none":undefined}}>Password<input type="password" autoComplete="current-password" value={password} onChange={e=>setPassword(e.target.value)} required={!resetMode} disabled={resetMode}/></label>
     {message&&<div className="alert">{message}</div>}<button className="primary" disabled={submitting}>{submitting?"Please wait…":resetMode?"Send recovery email":"Sign in"}</button>
@@ -137,7 +139,7 @@ function NewPassword({onDone}){
     finally{setBusy(false);}
   }
   return <div className="login"><form className="panel" onSubmit={submit}>
-    <div className="brand">NG</div><h1>NORVIN GROUP LLC</h1>
+    <BrandLogo compact/><h1>NORVIN GROUP LLC</h1>
     <h2>{done?"Password updated":"Choose a new password"}</h2>
     {done?<><p>Your new password has been saved.</p><button type="button" className="primary" onClick={onDone}>Continue to dashboard</button></>:<>
       <label>New password<input type="password" autoComplete="new-password" minLength={12} required value={password} onChange={e=>setPassword(e.target.value)}/></label>
@@ -156,7 +158,7 @@ function Dashboard({setSection}){
     ["Control center",[["documents","Documents","Printable business records"],["reports","Reports","Financial summaries"]]]
   ];
   return <section className="dashboard-home">
-    <div className="hero"><div><div className="eyebrow">NORVIN GROUP LLC</div><h2>Financial Management System</h2><p>Central workspace for company operations, billing, expenses, workforce records, documents and reporting.</p></div><div className="hero-mark">NG</div></div>
+    <div className="hero"><div><div className="eyebrow">NORVIN GROUP LLC</div><h2>Financial Management System</h2><p>Central workspace for company operations, billing, expenses, workforce records, documents and reporting.</p></div><BrandLogo compact/></div>
     {groups.map(([heading,items])=><div key={heading} className="dashboard-group"><div className="section-heading"><h3>{heading}</h3></div><div className="grid">{items.map(([id,label,desc])=><button className="tile" key={id} onClick={()=>setSection(id)}><strong>{label}</strong><span>{desc}</span><small>Open module →</small></button>)}</div></div>)}
   </section>
 }
