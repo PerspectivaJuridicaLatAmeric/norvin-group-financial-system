@@ -42,7 +42,7 @@ function App(){
   },[]);
 
   useEffect(()=>{
-    if(!supabase || !session || section==="dashboard"){setRows([]);return;}
+    if(!supabase || !session || ["dashboard","documents","reports"].includes(section)){setRows([]);setError("");return;}
     setError("");
     supabase.from(section).select("*").limit(100).then(({data,error})=>{
       if(error){setError(error.message);setRows([])} else setRows(data||[]);
@@ -122,7 +122,7 @@ function PayrollModule({rows,error}){
   const [frequency,setFrequency]=useState("weekly");
   const [filingStatus,setFilingStatus]=useState("single");
   const [multipleJobs,setMultipleJobs]=useState(false);
-  const [payDate,setPayDate]=useState("2026-10-14");
+  const [payDate,setPayDate]=useState(()=>new Date().toLocaleDateString("en-CA"));
   const [it4Exemptions,setIt4Exemptions]=useState("");
   const [employee,setEmployee]=useState(null);
   const [saveMessage,setSaveMessage]=useState("");
@@ -185,7 +185,7 @@ function PayrollModule({rows,error}){
         <tr><th>Employer FICA (separate expense)</th><td>{money(result.employerFicaTotal)}</td></tr>
         <tr><th>Remaining After FICA — NOT FINAL NET PAY</th><td>{money(result.remainingAfterFica)}</td></tr>
       </tbody></table></div>}
-      <button className="primary" type="button" onClick={persistDraft}>Save payroll draft</button>
+      <button className="primary" type="button" disabled={!employee||!result||!federalPreview||!ohioPreview||!readiness.ready} onClick={persistDraft}>Save payroll draft (requires verified tax setup)</button>
       {saveMessage&&<div className="notice">{saveMessage}</div>}
       <div className="notice">Federal preview assumes W-4 Steps 3 and 4 are zero and gross pay equals federal taxable wages. It is not a complete employee W-4 calculation. Ohio preview requires an IT 4 exemption count and an eligible pay date; local taxes, benefits and other deductions remain uncalculated. Do not use this preview to pay employees.</div>
       <h2>Payroll withholding engine</h2>
