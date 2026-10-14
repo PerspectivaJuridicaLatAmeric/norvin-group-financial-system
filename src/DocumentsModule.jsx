@@ -120,7 +120,7 @@ export default function DocumentsModule({supabase,initialType="estimate",initial
   }
   async function attachInvoiceEmail(){
     if(type!=="invoice")return;
-    if(!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(emailTo.trim())){setError("Enter a valid email address.");return;}
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailTo.trim())){setError("Enter a valid email address.");return;}
     setEmailSending(true);setError("");setSavedMessage("");
     try{
       const sheet=document.querySelector(".norvin-premium-invoice");
