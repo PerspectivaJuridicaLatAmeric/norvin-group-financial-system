@@ -119,3 +119,14 @@ aside>.company-logo{padding:7px;margin:0 0 8px;border:0;max-width:224px}
 .print-sheet .document-terms strong{font-size:10px;letter-spacing:.12em;color:#173e32}
 .print-sheet .document-terms p{margin:8px 0 0;font-size:11px;white-space:pre-wrap;color:#42524a;line-height:1.6}
 @media print{.print-sheet .document-reference,.print-sheet .document-terms{break-inside:avoid;-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+
+
+.document-line-editor{margin-top:12px;border:1px solid #dce6df;border-radius:9px;overflow:hidden}
+.document-line-editor>div{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 12px;background:#fff;font-size:12px}
+.document-line-editor>div+div{border-top:1px solid #e8ede9}
+.document-line-editor button{padding:6px 10px;background:#f9eeee;color:#8c3030}
+.print-sheet .document-totals{width:min(100%,310px);margin:18px 0 14px auto;border-top:1px solid #cfd9d3;padding-top:10px}
+.print-sheet .document-totals>div{display:flex;justify-content:space-between;gap:15px;padding:5px 0;font-size:11px}
+.print-sheet .document-totals span{color:#62736a}
+.print-sheet .document-totals strong{color:#173e32}
+@media print{.print-sheet .document-totals{break-inside:avoid}}
