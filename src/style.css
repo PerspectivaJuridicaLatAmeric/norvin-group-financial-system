@@ -138,3 +138,10 @@ aside>.company-logo{padding:7px;margin:0 0 8px;border:0;max-width:224px}
 .print-sheet .invoice-stamp{display:inline-block;border:4px double currentColor;border-radius:7px;padding:9px 18px;margin:0 0 16px auto;font-family:Georgia,serif;font-weight:900;letter-spacing:.13em;font-size:17px;transform:rotate(-7deg);opacity:.85;text-align:center}
 .invoice-stamp.stamp-paid{color:#187044}.invoice-stamp.stamp-pending{color:#a16b16}.invoice-stamp.stamp-partial{color:#225a9a}.invoice-stamp.stamp-cancelled{color:#a12c2c}
 @media print{.corporate-seal,.invoice-stamp{break-inside:avoid;-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+
+/* Actual artwork asset replaces the former plain CSS company seal. */
+.print-sheet .corporate-seal-image{display:block;width:166px;height:166px;object-fit:contain;margin:0 0 0 auto;opacity:.94}
+.print-sheet .document-authentication{display:flex;justify-content:flex-end;align-items:center;gap:14px;margin:20px 0 12px;padding-top:12px;border-top:1px solid #d5dce5;color:#243653}
+.document-authentication>div:first-child{text-align:right;display:flex;flex-direction:column;gap:4px}
+.document-authentication small{font-size:10px;letter-spacing:.04em}
+@media print{.print-sheet .corporate-seal-image{width:142px;height:142px;break-inside:avoid}}
