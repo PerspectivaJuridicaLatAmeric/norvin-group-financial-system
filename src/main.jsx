@@ -150,8 +150,14 @@ function NewPassword({onDone}){
 }
 
 function Dashboard({setSection}){
-  return <section className="welcome"><h2>Financial operations</h2><p>Choose a module to review company records.</p>
-    <div className="grid">{modules.filter(([id])=>id!=="dashboard").map(([id,label])=><button className="tile" key={id} onClick={()=>setSection(id)}><strong>{label}</strong><span>Open module →</span></button>)}</div>
+  const groups=[
+    ["Business operations",[["clients","Clients","Customer records"],["projects","Projects","Jobs and project activity"],["estimates","Estimates","Customer estimates"],["invoices","Invoices","Billing and receivables"],["payments","Payments","Customer payments"],["expenses","Expenses","Operating costs"]]],
+    ["Workforce",[["employees","Employees","Employee records"],["payroll_entries","Payroll","Payroll calculations"],["contractors","Contractors","Contractor records"],["contractor_payments","Contractor Payments","Contractor compensation"]]],
+    ["Control center",[["documents","Documents","Printable business records"],["reports","Reports","Financial summaries"]]]
+  ];
+  return <section className="dashboard-home">
+    <div className="hero"><div><div className="eyebrow">NORVIN GROUP LLC</div><h2>Financial Management System</h2><p>Central workspace for company operations, billing, expenses, workforce records, documents and reporting.</p></div><div className="hero-mark">NG</div></div>
+    {groups.map(([heading,items])=><div key={heading} className="dashboard-group"><div className="section-heading"><h3>{heading}</h3></div><div className="grid">{items.map(([id,label,desc])=><button className="tile" key={id} onClick={()=>setSection(id)}><strong>{label}</strong><span>{desc}</span><small>Open module →</small></button>)}</div></div>)}
   </section>
 }
 
