@@ -44,3 +44,13 @@ aside>.company-logo img{max-height:86px}
 .company-logo.compact{width:220px;max-width:100%;padding:7px}
 .company-logo.compact img{max-height:82px}
 @media(max-width:760px){aside>.company-logo{grid-column:1/-1;width:100%}.hero>.company-logo{min-width:0;width:220px}.panel>.company-logo{max-width:330px}}
+
+
+/* Official logo image */
+.company-logo{background:#fff;border-radius:8px;padding:7px;overflow:hidden;width:100%;justify-content:center}
+.company-logo img{display:block;width:100%;height:auto;object-fit:contain;background:#fff}
+aside>.company-logo{padding:7px;margin:0 0 8px;border:0;max-width:224px}
+.panel>.company-logo{max-width:360px;margin:0 auto 4px}
+.hero>.company-logo{max-width:320px;min-width:280px;padding:8px}
+.company-logo.compact{max-width:250px}
+@media(max-width:760px){aside>.company-logo{max-width:100%}.panel>.company-logo{max-width:330px}.hero>.company-logo{max-width:240px;min-width:0}}
