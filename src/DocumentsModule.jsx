@@ -22,7 +22,8 @@ export default function DocumentsModule(){
   const [error,setError]=React.useState("");
   const validAmount=amount!==""&&Number.isFinite(Number(amount))&&Number(amount)>=0;
   function printDocument(){
-    if(!number.trim()||!name.trim()||!date||!validAmount){setError("Enter a document number, recipient, valid date and nonnegative amount.");return;}
+    const calculatedOk=["invoice","estimate","purchase-order"].includes(type)&&rate!==""&&Number.isFinite(Number(rate))&&Number(rate)>=0&&Number(qty)>0;
+    if(!number.trim()||!name.trim()||!date||(!validAmount&&!calculatedOk)){setError("Enter a document number, recipient, valid date and a valid amount or line-item rate.");return;}
     setError("");window.print();
   }
   const label=TYPES.find(([key])=>key===type)?.[1] || "Document";
