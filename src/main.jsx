@@ -86,12 +86,18 @@ function App(){
 }
 
 function Login(){
-  const [email,setEmail]=useState(""); const [password,setPassword]=useState(""); const [message,setMessage]=useState("");
-  async function submit(e){e.preventDefault();setMessage("");const {error}=await supabase.auth.signInWithPassword({email,password});if(error)setMessage(error.message)}
+  const [email,setEmail]=useState(""); const [password,setPassword]=useState(""); const [message,setMessage]=useState(""); const [submitting,setSubmitting]=useState(false);
+  async function submit(e){
+    e.preventDefault();if(submitting)return;
+    setMessage("");setSubmitting(true);
+    try{const {error}=await supabase.auth.signInWithPassword({email,password});if(error)throw error;}
+    catch(err){setMessage(err.message||"Unable to sign in. Please try again.");}
+    finally{setSubmitting(false);}
+  }
   return <div className="login"><form className="panel" onSubmit={submit}><div className="brand">NG</div><h1>NORVIN GROUP LLC</h1><p>Financial Management System</p>
     <label>Email<input type="email" value={email} onChange={e=>setEmail(e.target.value)} required/></label>
     <label>Password<input type="password" value={password} onChange={e=>setPassword(e.target.value)} required/></label>
-    {message&&<div className="alert">{message}</div>}<button className="primary">Sign in</button>
+    {message&&<div className="alert">{message}</div>}<button className="primary" disabled={submitting}>{submitting?"Signing in…":"Sign in"}</button>
     <small>Access is controlled by Supabase Authentication. Do not share credentials.</small>
   </form></div>
 }
