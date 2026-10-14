@@ -40,12 +40,10 @@ export default function CrudModule({ supabase, table, config, initialRows = [], 
       : supabase.from(table).insert(payload);
     const { error } = await query;
     if (error) throw error;
-    try {
-      await reload();
-      setForm(empty);
-      setEditingId(null);
-      setMessage(editingId ? "Record updated." : "Record created.");
-    } catch (err) { throw err; }
+    await reload();
+    setForm(empty);
+    setEditingId(null);
+    setMessage(editingId ? "Record updated." : "Record created.");
     } catch(err){setMessage(err.message||"Unable to save record.");}
     finally{setBusy(false);}
   }
