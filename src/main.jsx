@@ -3,6 +3,8 @@ import { createRoot } from "react-dom/client";
 import { createClient } from "@supabase/supabase-js";
 import "./style.css";
 import { calculateFica2026 } from "./payrollTax2026.js";
+import CrudModule from "./CrudModule.jsx";
+import { moduleConfigs } from "./moduleConfigs.js";
 
 const modules = [
   ["dashboard","Dashboard"],["clients","Clients"],["projects","Projects"],
@@ -83,6 +85,8 @@ function Dashboard({setSection}){
 function DataModule({title,rows,error}){
   const columns=rows.length?Object.keys(rows[0]):[];
   if(title==="Payroll") return <PayrollModule rows={rows} error={error}/>;
+  if(title==="Clients") return <CrudModule supabase={supabase} table="clients" config={moduleConfigs.clients} initialRows={rows} loadError={error}/>;
+  if(title==="Projects") return <CrudModule supabase={supabase} table="projects" config={moduleConfigs.projects} initialRows={rows} loadError={error}/>;
   return <section><div className="toolbar"><div><strong>{title}</strong><div className="muted">{rows.length} RECORDS</div></div></div>
     {error?<div className="alert">Unable to load this module: {error}</div>:
     <div className="tablewrap">{!rows.length?<div className="empty">No records found.</div>:
