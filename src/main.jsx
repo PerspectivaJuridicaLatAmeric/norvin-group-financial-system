@@ -7,7 +7,7 @@ import CrudModule from "./CrudModule.jsx";
 import { moduleConfigs } from "./moduleConfigs.js";
 
 const modules = [
-  ["dashboard","Dashboard"],["clients","Clients"],["projects","Projects"],
+  ["dashboard","Dashboard"],["clients","Clients"],["projects","Projects"],["estimates","Estimates"],
   ["invoices","Invoices"],["payments","Payments"],["expenses","Expenses"],
   ["employees","Employees"],["payroll_entries","Payroll"],["contractors","Contractors"],
   ["contractor_payments","Contractor Payments"]
@@ -87,6 +87,7 @@ function DataModule({title,rows,error}){
   if(title==="Payroll") return <PayrollModule rows={rows} error={error}/>;
   if(title==="Clients") return <CrudModule supabase={supabase} table="clients" config={moduleConfigs.clients} initialRows={rows} loadError={error}/>;
   if(title==="Projects") return <CrudModule supabase={supabase} table="projects" config={moduleConfigs.projects} initialRows={rows} loadError={error}/>;
+  if(title==="Estimates") return <CrudModule supabase={supabase} table="estimates" config={moduleConfigs.estimates} initialRows={rows} loadError={error}/>;
   if(title==="Invoices") return <CrudModule supabase={supabase} table="invoices" config={moduleConfigs.invoices} initialRows={rows} loadError={error}/>;
   if(title==="Payments") return <CrudModule supabase={supabase} table="payments" config={moduleConfigs.payments} initialRows={rows} loadError={error}/>;
   if(title==="Expenses") return <CrudModule supabase={supabase} table="expenses" config={moduleConfigs.expenses} initialRows={rows} loadError={error}/>;
