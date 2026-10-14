@@ -1,7 +1,7 @@
 import React from "react";
 
 const TYPES = [
-  ["estimate","Estimate"],
+  ["estimate","Proforma / Estimate"],
   ["invoice","Invoice"],
   ["purchase-order","Purchase Order"],
   ["payroll-statement","Payroll Statement (Manual Draft)"],
@@ -129,9 +129,8 @@ export default function DocumentsModule({supabase}){
     <article className="print-sheet">
       <header className="document-header">
         <img className="document-logo" src="/norvin-logo-web.jpg" alt="NORVIN GROUP LLC"/>
-        <div className="document-title"><span>BUSINESS DOCUMENT</span><h2>{label}</h2></div>
+        <div className="document-title"><h2>{label}</h2></div>
       </header>
-      <div className="document-brandline">PROFESSIONAL SERVICES <span>•</span> OHIO, USA</div>
       <div className="document-meta">
         <div><small>DOCUMENT #</small><strong>{number||"—"}</strong></div>
         <div><small>DATE</small><strong>{date}</strong></div>
