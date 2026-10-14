@@ -92,7 +92,8 @@ export const moduleConfigs = {
       { key: "client_id", label: "Client ID" },
       { key: "project_id", label: "Project ID" },
       { key: "amount", label: "Amount", type: "number", required: true },
-      { key: "status", label: "Status" },
+      { key: "status", label: "Status", type: "select", options: [{value:"Draft",label:"Draft"},{value:"Sent",label:"Sent"},{value:"Approved",label:"Approved"},{value:"Rejected",label:"Rejected"},{value:"Expired",label:"Expired"}] },
+      { key: "service_type", label: "Service type", type: "select", options: [{value:"painting",label:"Painting (15 days)",days:15},{value:"maintenance",label:"Maintenance (15 days)",days:15},{value:"remodeling",label:"Remodeling (15 days)",days:15},{value:"urgent_repairs",label:"Urgent repairs (7 days)",days:7},{value:"large_project",label:"Large project (30 days)",days:30}] },
       { key: "valid_until", label: "Valid until", type: "date" }
     ]
   }
