@@ -31,3 +31,16 @@ header{display:flex;align-items:center;justify-content:space-between;gap:18px;ma
 
 /* Stage 1 approved presentation */
 aside>.company-logo{padding:8px 4px 12px;border-bottom:1px solid #ffffff18;margin-bottom:8px}aside>.company-logo .logo-copy strong{color:#fff}aside>.company-logo .logo-copy span{color:#d9c38c}aside>.company-logo .logo-copy small{color:#d9dfdc}.login{background:linear-gradient(135deg,#e8eee9,#f7f8f6)}.panel>.company-logo{width:100%;justify-content:center}.panel>.company-logo .logo-copy{display:flex}.panel>.company-logo .logo-copy strong{font-size:28px}.hero>.company-logo .logo-copy{display:flex}.hero>.company-logo{min-width:280px}.hero{border-top:4px solid #a98536}.content{background:#f7f8f6}@media(max-width:760px){aside>.company-logo .logo-copy{display:flex}.hero>.company-logo{min-width:0}.hero>.company-logo .logo-copy{display:none}}
+
+
+/* Official image logo */
+.company-logo{display:flex;align-items:center;justify-content:center;background:#fff;border-radius:12px;overflow:hidden}
+.company-logo img{display:block;width:100%;height:auto;object-fit:contain;background:#fff}
+.panel>.company-logo{width:100%;max-width:370px;align-self:center;padding:8px 12px;border:1px solid var(--line);box-shadow:0 8px 22px #15233b12}
+.panel>.company-logo img{max-height:125px}
+aside>.company-logo{width:100%;margin:0 0 10px;padding:7px;background:#fff;border:0;border-radius:10px}
+aside>.company-logo img{max-height:86px}
+.hero>.company-logo{width:300px;min-width:300px;padding:8px;background:#fff}
+.company-logo.compact{width:220px;max-width:100%;padding:7px}
+.company-logo.compact img{max-height:82px}
+@media(max-width:760px){aside>.company-logo{grid-column:1/-1;width:100%}.hero>.company-logo{min-width:0;width:220px}.panel>.company-logo{max-width:330px}}
