@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 
 export default function CrudModule({ supabase, table, config, initialRows = [], loadError = "" }) {
-  const empty = Object.fromEntries(config.fields.map(f => [f.key, ""]));
+  const empty = Object.fromEntries(config.fields.map(f => [f.key, f.type === "checkbox" ? false : ""]));
   const [rows, setRows] = useState(initialRows);
   const [form, setForm] = useState(empty);
   const [editingId, setEditingId] = useState(null);
@@ -39,7 +39,7 @@ export default function CrudModule({ supabase, table, config, initialRows = [], 
 
   function edit(row) {
     setEditingId(row.id);
-    setForm(Object.fromEntries(config.fields.map(f => [f.key, row[f.key] ?? ""])));
+    setForm(Object.fromEntries(config.fields.map(f => [f.key, f.type === "checkbox" ? Boolean(row[f.key]) : (row[f.key] ?? "")])));
   }
 
   async function remove(id) {
@@ -54,7 +54,7 @@ export default function CrudModule({ supabase, table, config, initialRows = [], 
     <div className="toolbar"><div><strong>{config.title}</strong><div className="muted">{rows.length} RECORDS</div></div></div>
     <form className="formgrid" onSubmit={save}>
       {config.fields.map(field => <label key={field.key}>{field.label}
-        <input type={field.type || "text"} required={field.required} value={form[field.key]} onChange={e => setForm(v => ({...v, [field.key]: e.target.value}))}/>
+        <input type={field.type || "text"} required={field.required} {...(field.type === "checkbox" ? {checked:Boolean(form[field.key]),onChange:e=>setForm(v=>({...v,[field.key]:e.target.checked}))} : {value:form[field.key],onChange:e=>setForm(v=>({...v,[field.key]:e.target.value}))})}/>
       </label>)}
       <div className="formactions"><button className="primary">{editingId ? "Update" : "Add"}</button>
         {editingId && <button type="button" onClick={() => {setEditingId(null);setForm(empty)}}>Cancel</button>}
