@@ -3,6 +3,8 @@ import { createRoot } from "react-dom/client";
 import { createClient } from "@supabase/supabase-js";
 import "./style.css";
 import { calculateFica2026 } from "./payrollTax2026.js";
+import { calculateFederalWithholding2026 } from "./federalWithholding2026.js";
+import { IRS_AUTOMATED_2026 } from "./irsAutomatedTables2026.js";
 import { validatePayrollReadiness, WITHHOLDING_SOURCES_2026 } from "./withholdingRules2026.js";
 import CrudModule from "./CrudModule.jsx";
 import DocumentsModule from "./DocumentsModule.jsx";
@@ -112,9 +114,13 @@ function PayrollModule({rows,error}){
   const [gross,setGross]=useState("");
   const [ssYtd,setSsYtd]=useState("0");
   const [medYtd,setMedYtd]=useState("0");
-  let result=null, calcError="";
+  const [frequency,setFrequency]=useState("weekly");
+  const [filingStatus,setFilingStatus]=useState("single");
+  const [multipleJobs,setMultipleJobs]=useState(false);
+  let result=null, federalPreview=null, calcError="";
   if(gross!==""){
-    try{result=calculateFica2026({grossPay:gross,socialSecurityYtd:ssYtd,medicareYtd:medYtd});}
+    try{result=calculateFica2026({grossPay:gross,socialSecurityYtd:ssYtd,medicareYtd:medYtd});
+      federalPreview=calculateFederalWithholding2026({taxableWages:Number(gross),frequency,filingStatus,multipleJobs,verifiedTable:IRS_AUTOMATED_2026});}
     catch(e){calcError=e.message;}
   }
   const money=n=>new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"}).format(n);
@@ -129,10 +135,14 @@ function PayrollModule({rows,error}){
         <label>Gross pay ($)<input type="number" min="0" step="0.01" value={gross} onChange={e=>setGross(e.target.value)}/></label>
         <label>Prior Social Security wages YTD ($)<input type="number" min="0" step="0.01" value={ssYtd} onChange={e=>setSsYtd(e.target.value)}/></label>
         <label>Prior Medicare wages YTD ($)<input type="number" min="0" step="0.01" value={medYtd} onChange={e=>setMedYtd(e.target.value)}/></label>
+        <label>Pay frequency<select value={frequency} onChange={e=>setFrequency(e.target.value)}><option value="weekly">Weekly</option><option value="biweekly">Biweekly</option><option value="semimonthly">Semimonthly</option><option value="monthly">Monthly</option></select></label>
+        <label>Federal filing status<select value={filingStatus} onChange={e=>setFilingStatus(e.target.value)}><option value="single">Single</option><option value="married">Married filing jointly</option><option value="headOfHousehold">Head of household</option></select></label>
+        <label>W-4 Step 2 multiple jobs<input type="checkbox" checked={multipleJobs} onChange={e=>setMultipleJobs(e.target.checked)}/></label>
       </div>
       {calcError&&<div className="alert">{calcError}</div>}
       {result&&<div className="tablewrap"><table><tbody>
         <tr><th>Gross Pay</th><td>{money(result.grossPay)}</td></tr>
+        {federalPreview&&<tr><th>Federal income tax — preview (W-4 Steps 3–4 assumed zero)</th><td>{money(federalPreview.federalIncomeWithheld)}</td></tr>}
         <tr><th>Employee Social Security</th><td>{money(result.employeeSocialSecurity)}</td></tr>
         <tr><th>Employee Medicare</th><td>{money(result.employeeMedicare)}</td></tr>
         <tr><th>Employee Additional Medicare</th><td>{money(result.employeeAdditionalMedicare)}</td></tr>
@@ -140,7 +150,7 @@ function PayrollModule({rows,error}){
         <tr><th>Employer FICA (separate expense)</th><td>{money(result.employerFicaTotal)}</td></tr>
         <tr><th>Remaining After FICA — NOT FINAL NET PAY</th><td>{money(result.remainingAfterFica)}</td></tr>
       </tbody></table></div>}
-      <div className="notice">Not ready for live payroll: federal income tax, Ohio income tax, applicable local and school district tax, and other deductions are not calculated yet. Do not use remaining-after-FICA as net pay.</div>
+      <div className="notice">Federal preview assumes W-4 Steps 3 and 4 are zero and gross pay equals federal taxable wages. It is not a complete employee W-4 calculation. Ohio, local taxes, benefits and other deductions remain uncalculated. Do not use this preview to pay employees.</div>
       <h2>Payroll withholding engine</h2>
       <p>Payroll will calculate employee withholdings from gross pay and employee tax elections. The calculation layer is intentionally separated from the user interface so federal, Social Security, Medicare, Ohio, and applicable local rules can be updated without rewriting payroll records.</p>
       <div className="grid">
