@@ -14,6 +14,8 @@ export default function DocumentsModule({supabase,initialType="estimate",initial
   const [name,setName]=React.useState("");
   const [amount,setAmount]=React.useState("");
   const [date,setDate]=React.useState(new Date().toISOString().slice(0,10));
+  const [issueDate,setIssueDate]=React.useState(new Date().toISOString().slice(0,10));
+  const [paymentInstructions,setPaymentInstructions]=React.useState("");
   const [notes,setNotes]=React.useState("");
   const [paymentStatus,setPaymentStatus]=React.useState("pending");
   const [contact,setContact]=React.useState("");
@@ -50,7 +52,7 @@ export default function DocumentsModule({supabase,initialType="estimate",initial
         if(!active)return;
         if(cr.error)throw cr.error;if(sr.error)throw sr.error;if(pr.error)throw pr.error;
         setClients(cr.data||[]);setProjects(jr.data||[]);setSourceRows(sr.data||[]);setPayments(pr.data||[]);
-        if(initialRecordId){const rec=(sr.data||[]).find(x=>String(x.id)===String(initialRecordId));if(rec){const client=(cr.data||[]).find(x=>String(x.id)===String(rec.client_id));setSourceId(String(rec.id));setNumber(rec.invoice_number||rec.estimate_number||"");setName(client?.name||"");setAddress(client?.address||"");setAmount(rec.amount??"");setDate(String(rec.due_date||rec.valid_until||new Date().toISOString().slice(0,10)).slice(0,10));setDescription(rec.description||rec.notes||"");setNotes(rec.notes||"");setItems(type==="estimate"&&Array.isArray(rec.line_items)?rec.line_items.map(item=>({description:item.description,qty:Number(item.quantity)||1,rate:Number(item.price)||0})):[]);setRate("");setStatus(rec.status||"Draft");setReference((jr.data||[]).find(p=>p.id===rec.project_id)?.name||"N/A");if(autoPrint)window.setTimeout(()=>window.print(),350);}}
+        if(initialRecordId){const rec=(sr.data||[]).find(x=>String(x.id)===String(initialRecordId));if(rec){const client=(cr.data||[]).find(x=>String(x.id)===String(rec.client_id));setSourceId(String(rec.id));setNumber(rec.invoice_number||rec.estimate_number||"");setName(client?.name||"");setAddress(client?.address||"");setAmount(rec.amount??rec.total??"");setIssueDate(String(rec.issue_date||rec.created_at||new Date().toISOString().slice(0,10)).slice(0,10));setPaymentInstructions(rec.payment_instructions||"");setTerms(rec.terms||"");setTaxRate(String(rec.tax_rate??0));setDate(String(rec.due_date||rec.valid_until||new Date().toISOString().slice(0,10)).slice(0,10));setDescription(rec.description||rec.notes||"");setNotes(rec.notes||"");setItems(Array.isArray(rec.line_items)?rec.line_items.map(item=>({description:item.description,qty:Number(item.quantity)||1,rate:Number(item.price)||0})):[]);setRate("");setStatus(rec.status||"Draft");setReference((jr.data||[]).find(p=>p.id===rec.project_id)?.name||"N/A");if(autoPrint)window.setTimeout(()=>window.print(),350);}}
       }catch(e){if(active)setError(e.message||"Unable to load saved records.");}
       finally{if(active)setSourceLoading(false);}
     } load(); return()=>{active=false};
@@ -60,7 +62,7 @@ export default function DocumentsModule({supabase,initialType="estimate",initial
     const r=sourceRows.find(x=>String(x.id)===String(id)); if(!r)return;
     const client=clients.find(x=>String(x.id)===String(r.client_id));
     const project=projects.find(x=>String(x.id)===String(r.project_id));
-    if(type==="invoice"){setPaymentStatus(String(r.status||"").toLowerCase().includes("cancel")?"cancelled":"pending");setNumber(r.invoice_number||"");setName(client?.name||"");setAddress(client?.address||"");setAmount(r.amount??"");setDate((r.due_date||new Date().toISOString().slice(0,10)).slice(0,10));setDescription(r.description||r.notes||project?.name||"");setRate("");setQty("1");setNotes(r.notes||"");}
+    if(type==="invoice"){setPaymentStatus(String(r.status||"").toLowerCase().includes("cancel")?"cancelled":"pending");setNumber(r.invoice_number||"");setName(client?.name||"");setAddress(client?.address||"");setAmount(r.amount??r.total??"");setIssueDate((r.issue_date||r.created_at||new Date().toISOString().slice(0,10)).slice(0,10));setTaxRate(String(r.tax_rate??0));setTerms(r.terms||"");setPaymentInstructions(r.payment_instructions||"");setItems(Array.isArray(r.line_items)?r.line_items.map(item=>({description:item.description,qty:Number(item.quantity)||1,rate:Number(item.price)||0})):[]);setDate((r.due_date||new Date().toISOString().slice(0,10)).slice(0,10));setDescription(r.description||r.notes||project?.name||"");setRate("");setQty("1");setNotes(r.notes||"");}
     if(type==="estimate"){setNumber(r.estimate_number||"");setName(client?.name||"");setAddress(client?.address||"");setAmount(r.amount??"");setDate((r.valid_until||new Date().toISOString().slice(0,10)).slice(0,10));setDescription("");setItems(Array.isArray(r.line_items)?r.line_items.map(item=>({description:item.description,qty:Number(item.quantity)||1,rate:Number(item.price)||0})):[]);setRate("");setQty("1");setNotes(r.notes||"");setStatus(r.status||"Draft");setReference(project?.name||"N/A");}
     if(type==="expense-report"){setNumber(r.expense_number||String(r.id).slice(0,8));setName(r.vendor||"");setAmount(r.amount??"");setDate((r.expense_date||new Date().toISOString().slice(0,10)).slice(0,10));setDescription(r.description||"");}
   }
@@ -91,7 +93,7 @@ export default function DocumentsModule({supabase,initialType="estimate",initial
     setSaving(true);setError("");setSavedMessage("");
     try{
       let payload={amount:displayAmount};
-      if(type==="invoice")payload={...payload,invoice_number:documentNumber,due_date:date,description,notes};
+      if(type==="invoice")payload={...payload,invoice_number:documentNumber,issue_date:issueDate,due_date:date,description,notes,terms,payment_instructions:paymentInstructions,tax_rate:Number(taxRate)||0,line_items:[...items,...(description.trim()&&currentLine!==null?[{description,qty:Number(qty),rate:Number(rate)}]:[])].map(item=>({description:item.description,quantity:item.qty,price:item.rate})),total:displayAmount};
       if(type==="estimate")payload={...payload,estimate_number:documentNumber,valid_until:date,description,notes};
       if(type==="expense-report")payload={...payload,expense_date:date,vendor:name,description:description||notes};
       const existing=sourceId?sourceRows.find(x=>String(x.id)===String(sourceId)):null;
@@ -121,12 +123,14 @@ export default function DocumentsModule({supabase,initialType="estimate",initial
       {showLineItems&&<><label className="wide">Service / Item<input value={description} onChange={e=>setDescription(e.target.value)} placeholder="Description of work or service"/></label><label>Quantity<input type="number" min="0" step="1" value={qty} onChange={e=>setQty(e.target.value)}/></label><label>Rate<input type="number" min="0" step="0.01" value={rate} onChange={e=>setRate(e.target.value)}/></label></>}
       {showLineItems&&<><label>Tax rate (%)<input type="number" min="0" max="100" step="0.01" value={taxRate} onChange={e=>setTaxRate(e.target.value)}/></label><div className="wide"><button type="button" onClick={()=>{if(!description.trim()||!(Number(qty)>0)||rate===""||!(Number(rate)>=0)){setError("Enter a description, quantity and rate first.");return;}setItems(v=>[...v,{description:description.trim(),qty:Number(qty),rate:Number(rate)}]);setDescription("");setQty("1");setRate("");setError("");}}>+ Add line item</button>{items.length>0&&<div className="document-line-editor">{items.map((item,i)=><div key={i}><span>{item.description} · {item.qty} × {item.rate.toFixed(2)}</span><button type="button" onClick={()=>setItems(v=>v.filter((_,j)=>i!==j))}>Remove</button></div>)}</div>}</div></>}
       <label>Amount<input type="number" step="0.01" value={amount} onChange={e=>setAmount(e.target.value)} placeholder={showLineItems?"Fallback total":"0.00"}/></label>
-      <label>Date<input type="date" value={date} onChange={e=>setDate(e.target.value)}/></label>
+      {type==="invoice"&&<label>Issue date<input type="date" value={issueDate} onChange={e=>setIssueDate(e.target.value)}/></label>}
+      <label>{type==="invoice"?"Due date":"Date"}<input type="date" value={date} onChange={e=>setDate(e.target.value)}/></label>
       <label>Reference / Project<input value={reference} onChange={e=>setReference(e.target.value)} placeholder="Project or work order reference"/></label>
       <label>Document status<select value={status} onChange={e=>setStatus(e.target.value)}><option>Draft</option><option>Issued</option><option>Approved</option><option>Paid</option></select></label>
       <label className="wide">Terms / Conditions<textarea rows="2" value={terms} onChange={e=>setTerms(e.target.value)}/></label>
       {type==="invoice"&&<div className="notice wide">Payment status: {resolvedPaymentStatus==="paid"?"PAID":resolvedPaymentStatus==="partial"?"PARTIALLY PAID":resolvedPaymentStatus==="cancelled"?"CANCELLED":"PENDING PAYMENT"}. {selectedSource?"Calculated from registered invoice payments.":"Register the invoice and its payments to update this status automatically."}</div>}
       <label>Project / Reference<input value={reference} onChange={e=>setReference(e.target.value)} placeholder="Project or purchase reference"/></label>
+      {type==="invoice"&&<label className="wide">Payment instructions (verified company details only)<textarea rows="2" value={paymentInstructions} onChange={e=>setPaymentInstructions(e.target.value)} placeholder="Enter verified payment instructions; no sample bank account is printed"/></label>}
       <label>Business contact<input value={contact} onChange={e=>setContact(e.target.value)} placeholder="Company phone or email"/></label>
       <label className="wide">Terms / Instructions<textarea rows="2" value={terms} onChange={e=>setTerms(e.target.value)}/></label>
       <label>Notes / Description<textarea rows="3" value={notes} onChange={e=>setNotes(e.target.value)}/></label>
@@ -137,26 +141,29 @@ export default function DocumentsModule({supabase,initialType="estimate",initial
       <div className="formactions"><button type="button" onClick={saveDocument} disabled={saving}>{saving?"Saving…":sourceId?"Update Record":"Save / Register"}</button><button className="primary" type="button" onClick={printDocument}>Print / Save PDF</button></div>
     </div>}
     {onClose&&<div className="formactions no-print"><button className="primary" type="button" onClick={printDocument}>Print / Save PDF</button></div>}
-    <article className={`print-sheet ${type==="estimate"?"norvin-premium-estimate":""}`}>
+    <article className={`print-sheet ${type==="estimate"?"norvin-premium-estimate":type==="invoice"?"norvin-premium-invoice":""}`}>
       <header className="document-header">
         <img className="document-logo" src="/norvin-logo-web.jpg" alt="NORVIN GROUP LLC"/>
         <div className="document-title"><h2>{label}</h2>{type==="estimate"&&<small className="estimate-sector-line">RESIDENTIAL  |  COMMERCIAL  |  INDUSTRIAL</small>}</div>
       </header>
-      {type==="invoice"&&<div className={"invoice-stamp stamp-"+resolvedPaymentStatus} aria-label={"Invoice status: "+resolvedPaymentStatus}>{resolvedPaymentStatus==="paid"?"PAID":resolvedPaymentStatus==="partial"?"PARTIALLY PAID":resolvedPaymentStatus==="cancelled"?"CANCELLED":"PENDING PAYMENT"}</div>}
+      {false&&type==="invoice"&&<div className={"invoice-stamp stamp-"+resolvedPaymentStatus} aria-label={"Invoice status: "+resolvedPaymentStatus}>{resolvedPaymentStatus==="paid"?"PAID":resolvedPaymentStatus==="partial"?"PARTIALLY PAID":resolvedPaymentStatus==="cancelled"?"CANCELLED":"PENDING PAYMENT"}</div>}
       <div className="document-meta">
         <div><small>DOCUMENT #</small><strong>{documentNumber||"—"}</strong></div>
-        <div><small>DATE</small><strong>{date}</strong></div>
+        <div><small>{type==="invoice"?"ISSUED":"DATE"}</small><strong>{type==="invoice"?issueDate:date}</strong></div>
+        {type==="invoice"&&<div><small>DUE DATE</small><strong>{date}</strong></div>
         
       </div>
       {reference&&<div className="document-reference"><small>PROJECT / REFERENCE</small><strong>{reference}</strong></div>}
       <div className="document-party"><small>{partyLabel.toUpperCase()}</small><strong>{name||"—"}</strong>{address&&<span>{address}</span>}</div>
       {showLineItems&&<div className="document-items"><div className="item-head"><span>Description</span><span>Qty</span><span>Rate</span><span>Amount</span></div>{[...items,...(description.trim()&&currentLine!==null?[{description,qty:Number(qty),rate:Number(rate)}]:[])].map((item,i)=><div className="item-row" key={i}><strong>{item.description}</strong><span>{item.qty}</span><span>{new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"}).format(item.rate)}</span><strong>{new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"}).format(item.qty*item.rate)}</strong></div>)}{items.length===0&&currentLine===null&&<div className="item-row"><strong>{description||"Service / project work"}</strong><span>—</span><span>—</span><strong>—</strong></div>}</div>}
       {showLineItems&&lineTotal!==null&&<div className="document-totals"><div><span>Subtotal</span><strong>{new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"}).format(lineTotal)}</strong></div><div><span>Tax ({taxRate||0}%)</span><strong>{new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"}).format(salesTax)}</strong></div></div>}
-      <div className="document-amount"><span>{amountLabel}</span><strong>{new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"}).format(displayAmount)}</strong></div>
-      {type==="invoice"&&sourceId&&<div className="invoice-balance"><div><span>Payments Received</span><strong>{new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"}).format(paidTotal)}</strong></div><div><span>Balance Due</span><strong>{new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"}).format(balanceDue)}</strong></div></div>}
+      {type==="invoice"&&<div className="invoice-summary-line"><span>Payments received</span><strong>{new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"}).format(paidTotal)}</strong></div>}
+      <div className="document-amount"><span>{type==="invoice"?"BALANCE DUE":amountLabel}</span><strong>{new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"}).format(type==="invoice"?balanceDue:displayAmount)}</strong></div>
+      {false&&type==="invoice"&&sourceId&&<div className="invoice-balance"><div><span>Payments Received</span><strong>{new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"}).format(paidTotal)}</strong></div><div><span>Balance Due</span><strong>{new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"}).format(balanceDue)}</strong></div></div>}
       {notes.trim()&&<div className="document-notes"><strong>Notes / Description</strong><p>{notes}</p></div>}
+      {type==="invoice"&&paymentInstructions.trim()&&<div className="document-terms"><strong>PAYMENT INFORMATION</strong><p>{paymentInstructions}</p></div>}
       {terms.trim()&&<div className="document-terms"><strong>TERMS & CONDITIONS</strong><p>{terms}</p></div>}
-      {type==="estimate"?<div className="estimate-approval-block"><div className="estimate-approval-signature"><strong>AUTHORIZED SIGNATURE</strong><div className="estimate-signature-line"></div><span>Authorized Representative</span><small>DATE: {date}</small></div><div className="estimate-approval-seal"><img src="/norvin-company-stamp.svg" alt="NORVIN GROUP LLC company seal"/></div></div>:<><div className="document-signatures"><div><span>AUTHORIZED BY</span><i></i><small>Signature / Date</small></div><div><span>ACKNOWLEDGED BY</span><i></i><small>Signature / Date</small></div></div><div className="document-authentication"><img className="corporate-seal-image" src="/norvin-company-stamp.svg" alt="NORVIN GROUP LLC company seal"/></div></>}
+      {(type==="estimate"||type==="invoice")?<div className="estimate-approval-block"><div className="estimate-approval-signature"><strong>AUTHORIZED SIGNATURE</strong><div className="estimate-signature-line"></div><span>Authorized Representative</span><small>DATE: {date}</small></div><div className="estimate-approval-seal"><img src="/norvin-company-stamp.svg" alt="NORVIN GROUP LLC company seal"/></div></div>:<><div className="document-signatures"><div><span>AUTHORIZED BY</span><i></i><small>Signature / Date</small></div><div><span>ACKNOWLEDGED BY</span><i></i><small>Signature / Date</small></div></div><div className="document-authentication"><img className="corporate-seal-image" src="/norvin-company-stamp.svg" alt="NORVIN GROUP LLC company seal"/></div></>}
       <footer><strong>NORVIN GROUP LLC</strong><span>SOLIDITY AND TRUST IN EVERY PROJECT</span><small>{contact||"Generated by NORVIN GROUP LLC Financial System"}</small></footer>
     </article>
   </section>;
