@@ -339,3 +339,20 @@ iframe[src*="netlify"],iframe[title*="Netlify"],iframe[id*="netlify"],iframe[cla
 .npi-email-form p{width:100%;font-size:12px}
 .invoice-summary-line{display:flex;justify-content:space-between;padding:9px 12px;background:#f5f1e6}
 @media print{.print-sheet.norvin-premium-invoice{box-shadow:none!important;padding:12px 15px!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}.norvin-premium-invoice .document-header,.norvin-premium-invoice .document-items .item-head,.norvin-premium-invoice .document-amount,.norvin-premium-invoice footer{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}}
+
+
+/* Natural black-ink invoice status stamp beside the recorded balance */
+.print-sheet.norvin-premium-invoice .invoice-stamp-and-amount{display:flex;align-items:center;justify-content:flex-end;gap:26px;margin:12px 0 18px;break-inside:avoid}
+.print-sheet.norvin-premium-invoice .invoice-stamp-and-amount .document-amount{flex:0 1 245px;margin:0}
+.print-sheet.norvin-premium-invoice .invoice-ink-stamp{box-sizing:border-box;flex:0 0 196px;width:196px;height:94px;padding:6px;border:4px double #252525;color:#252525;transform:rotate(-7deg);opacity:.85;filter:contrast(1.2);background:transparent;display:flex;align-items:stretch;justify-content:center;position:relative;overflow:hidden}
+.print-sheet.norvin-premium-invoice .invoice-ink-stamp:after{content:"";position:absolute;inset:0;pointer-events:none;opacity:.23;background:repeating-linear-gradient(103deg,transparent 0px,transparent 4px,#fff 5px,transparent 7px,transparent 15px);mix-blend-mode:screen}
+.print-sheet.norvin-premium-invoice .ink-stamp-inner{width:100%;height:100%;border:1px solid #303030;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;line-height:1.03}
+.print-sheet.norvin-premium-invoice .ink-stamp-inner strong{font-family:Georgia,"Times New Roman",serif!important;font-weight:900!important;font-size:27px!important;letter-spacing:1.1px;color:#252525!important;line-height:1!important}
+.print-sheet.norvin-premium-invoice .ink-stamp-inner strong:has(br){font-size:21px!important}
+.print-sheet.norvin-premium-invoice .ink-stamp-inner span{display:block;font-size:11px!important;font-weight:800!important;letter-spacing:1px;border-top:1px solid #303030;padding-top:4px;margin-top:5px;color:#252525!important}
+.print-sheet.norvin-premium-invoice .estimate-approval-block{display:flex!important;justify-content:flex-start!important;align-items:center!important;gap:0!important;column-gap:0!important}
+.print-sheet.norvin-premium-invoice .estimate-approval-signature{flex:0 0 230px!important;max-width:230px!important}
+.print-sheet.norvin-premium-invoice .estimate-approval-seal{width:105px!important;margin-left:-12px!important;justify-self:start!important}
+.print-sheet.norvin-premium-invoice .estimate-approval-seal img{width:100px!important;height:100px!important}
+@media(max-width:540px){.print-sheet.norvin-premium-invoice .invoice-stamp-and-amount{gap:10px}.print-sheet.norvin-premium-invoice .invoice-ink-stamp{flex-basis:145px;width:145px;height:75px}.print-sheet.norvin-premium-invoice .ink-stamp-inner strong{font-size:21px!important}.print-sheet.norvin-premium-invoice .ink-stamp-inner strong:has(br){font-size:16px!important}.print-sheet.norvin-premium-invoice .ink-stamp-inner span{font-size:9px!important}}
+@media print{.print-sheet.norvin-premium-invoice .invoice-ink-stamp{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
