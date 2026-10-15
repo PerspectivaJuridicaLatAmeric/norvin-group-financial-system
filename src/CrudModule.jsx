@@ -104,7 +104,18 @@ export default function CrudModule({ supabase, table, config, initialRows = [], 
     setMessage("");
     setBusy(true);
     try {
-      if(status==="Paid"){const q=await supabase.from("payments").select("amount").eq("invoice_id",row.id);if(q.error)throw q.error;const paid=(q.data||[]).reduce((sum,p)=>sum+Number(p.amount||0),0);if(paid<Number(row.total||row.amount||0)-0.005)throw new Error("Record the actual payment before marking Paid.");}
+      if(status==="Paid"){
+        const q=await supabase.from("payments").select("amount").eq("invoice_id",row.id);
+        if(q.error)throw q.error;
+        const paid=(q.data||[]).reduce((sum,p)=>sum+Number(p.amount||0),0);
+        const remaining=Math.max(0,Number(row.total??row.amount??0)-paid);
+        if(remaining>0&&!window.confirm(`Confirm payment actually received for ${row.invoice_number}?\n\nAmount to register: ${remaining.toFixed(2)}\n\nThis will create a payment record automatically.`))return;
+        const result=await supabase.rpc("confirm_invoice_paid",{p_invoice_id:row.id,p_method:"Not specified"});
+        if(result.error)throw result.error;
+        await reload();
+        setMessage(`Invoice ${row.invoice_number} marked Paid. Payment recorded: ${Number(result.data?.[0]?.payment_recorded||0).toFixed(2)}. Open Payments to review.`);
+        return;
+      }
       const status_date = new Date().toISOString().slice(0,10);
       const { data, error } = await supabase.from("invoices").update({status,status_date}).eq("id",row.id).select("id,status,status_date").single();
       if (error) throw error;
