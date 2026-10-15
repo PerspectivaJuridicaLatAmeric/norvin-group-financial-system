@@ -14,7 +14,8 @@
     "vite": "^7.1.7",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
-    "html2pdf.js": "^0.10.3"
+    "html2pdf.js": "^0.10.3",
+    "qrcode.react": "^4.2.0"
   },
   "devDependencies": {}
 }
