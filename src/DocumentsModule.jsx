@@ -135,7 +135,11 @@ export default function DocumentsModule({supabase,initialType="estimate",initial
       const {data,error:sendError}=await supabase.functions.invoke("send-invoice-email",{
         body:{invoice_id:String(sourceId),to:emailTo.trim(),pdf_base64}
       });
-      if(sendError)throw new Error(data?.error||sendError.message||"Email delivery failed.");
+      if(sendError){
+        let serverMessage=data?.error;
+        if(!serverMessage&&sendError.context?.json){try{const details=await sendError.context.json();serverMessage=details?.error||details?.message;}catch{}}
+        throw new Error(serverMessage||sendError.message||"Email delivery failed.");
+      }
       if(!data?.sent)throw new Error(data?.error||"The email service did not confirm the send.");
       setSavedMessage("Invoice sent successfully to "+emailTo.trim()+".");
 
