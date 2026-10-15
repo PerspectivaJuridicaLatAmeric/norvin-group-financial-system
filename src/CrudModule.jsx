@@ -14,7 +14,8 @@ export default function CrudModule({ supabase, table, config, initialRows = [], 
   const [invoiceOptions,setInvoiceOptions]=useState([]);
   const [invoicePayments,setInvoicePayments]=useState([]);
   const [paymentAmount,setPaymentAmount]=useState("");
-  const [paymentMethod,setPaymentMethod]=useState("");\n  const [invoicePayments,setInvoicePayments]=useState([]);\n  const [receivedInput,setReceivedInput]=useState("");\n  const [paymentMethod,setPaymentMethod]=useState("");
+  const [paymentMethod,setPaymentMethod]=useState("");
+  const [paymentDate,setPaymentDate]=useState("");\n  const [invoicePayments,setInvoicePayments]=useState([]);\n  const [receivedInput,setReceivedInput]=useState("");\n  const [paymentMethod,setPaymentMethod]=useState("");
   const [estimateItems,setEstimateItems]=useState([{description:"",quantity:1,price:""}]);
   const invoiceItemsTotal=estimateItems.reduce((sum,item)=>sum+(Number(item.quantity)||0)*(Number(item.price)||0),0);
   const estimateTotal=estimateItems.reduce((sum,item)=>sum+(Number(item.quantity)||0)*(Number(item.price)||0),0);
@@ -89,7 +90,12 @@ export default function CrudModule({ supabase, table, config, initialRows = [], 
       const highest=rows.reduce((max,row)=>{const match=String(row.invoice_number||"").match(new RegExp("^INV-"+year+"-([0-9]+)$"));return match?Math.max(max,Number(match[1])):max;},0);
       payload.invoice_number="INV-"+year+"-"+String(highest+1).padStart(5,"0");
     }
-    if(isInvoices&&payload.status==="Paid"&&(!editingId||String(rows.find(r=>r.id===editingId)?.status||"").toLowerCase()!=="paid")){setMessage("Save the invoice first, then use its status selector to confirm receipt of payment.");setBusy(false);return;}\n    if(isInvoices){if(!payload.client_id){setMessage("Select a registered client.");setBusy(false);return;}payload.line_items=estimateItems.filter(item=>item.description.trim()).map(item=>({description:item.description.trim(),quantity:Number(item.quantity),price:Number(item.price)}));if(payload.line_items.length){payload.amount=invoiceItemsTotal;}payload.total=Number(payload.amount)||0;payload.project_id=payload.project_id||null;}
+    if(isInvoices&&payload.status==="Paid"&&(!editingId||String(rows.find(r=>r.id===editingId)?.status||"").toLowerCase()!=="paid")){setMessage("Save the invoice first, then use its status selector to confirm receipt of payment.");setBusy(false);return;}\n    if(isInvoices&&!editingId&&paymentAmount!==""){
+      const upfront=Number(paymentAmount);
+      const invoiceTotal=Number(estimateItems.some(item=>item.description.trim()&&item.price!=="")?invoiceItemsTotal:payload.amount)||0;
+      if(!Number.isFinite(upfront)||upfront<0||upfront>invoiceTotal+0.005){setMessage("Payment received must be between zero and the invoice total.");setBusy(false);return;}
+    }
+    if(isInvoices){if(!payload.client_id){setMessage("Select a registered client.");setBusy(false);return;}payload.line_items=estimateItems.filter(item=>item.description.trim()).map(item=>({description:item.description.trim(),quantity:Number(item.quantity),price:Number(item.price)}));if(payload.line_items.length){payload.amount=invoiceItemsTotal;}payload.total=Number(payload.amount)||0;payload.project_id=payload.project_id||null;}
     for(const field of config.fields){
       if(field.type==="number" && payload[field.key]!==undefined){
         const value=Number(payload[field.key]);
@@ -104,13 +110,27 @@ export default function CrudModule({ supabase, table, config, initialRows = [], 
       payload.user_id = authData.user.id;
     }
     const query = editingId
-      ? supabase.from(table).update(payload).eq("id", editingId)
-      : supabase.from(table).insert(payload);
-    const { error } = await query;
+      ? supabase.from(table).update(payload).eq("id", editingId).select("id").single()
+      : supabase.from(table).insert(payload).select("id").single();
+    const { data:savedRecord,error } = await query;
     if (error) throw error;
+    if(isInvoices&&!editingId&&Number(paymentAmount)>0){
+      const upfront=Math.round(Number(paymentAmount)*100)/100;
+      const {error:paymentError}=await supabase.from("payments").insert({user_id:payload.user_id,invoice_id:savedRecord.id,amount:upfront,payment_date:paymentDate||new Date().toLocaleDateString("en-CA"),method:paymentMethod.trim()||"Not specified",reference:"Initial invoice payment"});
+      if(paymentError)throw new Error("Invoice saved, but initial payment was NOT recorded: "+paymentError.message+". Open the invoice to record it; do not create another invoice.");
+      const total=Number(payload.total||0);
+      if(total>0&&upfront>=total-0.005){
+        const confirmed=await supabase.rpc("confirm_invoice_paid",{p_invoice_id:savedRecord.id,p_method:"Not specified"});
+        if(confirmed.error)throw new Error("Payment saved, but invoice status needs review: "+confirmed.error.message);
+      }else{
+        const updated=await supabase.from("invoices").update({status:"Issued"}).eq("id",savedRecord.id);
+        if(updated.error)throw new Error("Payment saved, but invoice status needs review: "+updated.error.message);
+      }
+    }
     await reload();
     setForm(empty);
     if(isEstimates||isInvoices)setEstimateItems([{description:"",quantity:1,price:""}]);
+    if(isInvoices){setPaymentAmount("");setPaymentMethod("");setPaymentDate("");}
     setEditingId(null);
     setMessage(editingId ? "Record updated." : "Record created.");
     } catch(err){setMessage(err.message||"Unable to save record.");}
@@ -119,7 +139,7 @@ export default function CrudModule({ supabase, table, config, initialRows = [], 
 
   function edit(row) {\n    setReceivedInput("");setPaymentMethod("");
     setEditingId(row.id);
-    if(isInvoices){setPaymentAmount("");setPaymentMethod("");}
+    if(isInvoices){setPaymentAmount("");setPaymentMethod("");setPaymentDate("");}
     if(isInvoices)setEstimateItems(Array.isArray(row.line_items)&&row.line_items.length?row.line_items:[{description:"",quantity:1,price:""}]);
     if(isEstimates)setEstimateItems(Array.isArray(row.line_items)&&row.line_items.length?row.line_items:[{description:row.description||"",quantity:1,price:row.amount??""}]);
     setForm(Object.fromEntries(config.fields.map(f => [f.key, f.type === "checkbox" ? Boolean(row[f.key]) : (row[f.key] ?? "")])));
@@ -221,11 +241,11 @@ export default function CrudModule({ supabase, table, config, initialRows = [], 
       {config.fields.filter(field=>!((isEstimates&&["estimate_number","amount"].includes(field.key))||(isInvoices&&field.key==="invoice_number"))).map(field => <label key={field.key}>{field.label}
         {isPayments&&field.key==="invoice_id"?<select value={form.invoice_id||""} onChange={e=>updateField(field,e.target.value)} required><option value="">Select invoice…</option>{invoiceOptions.map(inv=><option key={inv.id} value={inv.id}>{inv.invoice_number} — ${Number(inv.total??inv.amount??0).toFixed(2)}</option>)}</select>:isInvoices&&field.key==="amount"&&estimateItems.some(item=>item.description.trim()&&item.price!=="")?<input type="number" readOnly aria-label="Automatically calculated invoice total" value={invoiceItemsTotal.toFixed(2)}/>:((isEstimates||isInvoices)&&(field.key==="client_id"||field.key==="project_id"))?<select value={form[field.key]} onChange={e=>updateField(field,e.target.value)}><option value="">{field.key==="client_id"?"Select registered client…":"N/A — No linked project"}</option>{(field.key==="client_id"?clientOptions:projectOptions.filter(p=>!form.client_id||!p.client_id||String(p.client_id)===String(form.client_id))).map(item=><option key={item.id} value={item.id}>{estimateLabel(field.key,item.id)}</option>)}</select>:field.type==="select"?<select value={form[field.key]} required={field.required} onChange={e=>updateField(field,e.target.value)}><option value="">Select status…</option>{field.options.map(option=><option key={option.value} value={option.value}>{option.label}</option>)}</select>:<input type={field.type || "text"} required={field.required} min={field.min} step={field.step} {...(field.type === "checkbox" ? {checked:Boolean(form[field.key]),onChange:e=>setForm(v=>({...v,[field.key]:e.target.checked}))} : {value:form[field.key],onChange:e=>setForm(v=>({...v,[field.key]:e.target.value}))})}/>}
       </label>)}
-      {isInvoices&&editingId&&currentInvoice&&<div className="wide" style={{padding:"18px",background:"#f4f7f5",border:"1px solid #dce5df",borderRadius:"12px"}}>
+      {isInvoices&&<div className="wide" style={{padding:"18px",background:"#f4f7f5",border:"1px solid #dce5df",borderRadius:"12px"}}>
         <h3>Payment Information</h3>
-        <div className="formgrid"><label>Invoice Total ($)<input readOnly value={currentTotal.toFixed(2)}/></label><label>Payments Received ($)<input readOnly value={currentReceived.toFixed(2)}/></label><label>Balance Due ($)<input readOnly value={currentBalance.toFixed(2)}/></label><label>Payment Status<input readOnly value={currentBalance<=0&&currentTotal>0?"Paid":currentReceived>0?"Partially Paid":"Pending Payment"}/></label></div>
-        <div className="formgrid"><label>New Payment Received ($)<input type="number" min="0.01" max={currentBalance} step="0.01" value={paymentAmount} onChange={e=>setPaymentAmount(e.target.value)} placeholder="Enter amount received" disabled={busy||currentBalance<=0}/></label><label>Payment Method<input value={paymentMethod} onChange={e=>setPaymentMethod(e.target.value)} placeholder="Cash, Check, Transfer..." disabled={busy||currentBalance<=0}/></label></div>
-        <button type="button" className="primary" disabled={busy||currentBalance<=0||!paymentAmount} onClick={recordInvoicePayment}>Record Payment</button>
+        {(()=>{const total=editingId?currentTotal:(estimateItems.some(item=>item.description.trim()&&item.price!=="")?invoiceItemsTotal:Number(form.amount)||0);const received=editingId?currentReceived:Math.max(0,Number(paymentAmount)||0);const balance=Math.max(0,total-received);return <div className="formgrid"><label>Invoice Total ($)<input readOnly value={total.toFixed(2)}/></label><label>Payments Received ($)<input readOnly value={received.toFixed(2)}/></label><label>Balance Due ($)<input readOnly value={balance.toFixed(2)}/></label><label>Payment Status<input readOnly value={balance<=0&&total>0?"Paid":received>0?"Partially Paid":"Pending Payment"}/></label></div>})()}
+        <div className="formgrid"><label>New Payment Received ($)<input type="number" min="0.01" max={editingId?currentBalance:(estimateItems.some(item=>item.description.trim()&&item.price!=="")?invoiceItemsTotal:Number(form.amount)||0)} step="0.01" value={paymentAmount} onChange={e=>setPaymentAmount(e.target.value)} placeholder="Enter amount received" disabled={busy||(editingId&&currentBalance<=0)}/></label><label>Payment Method<input value={paymentMethod} onChange={e=>setPaymentMethod(e.target.value)} placeholder="Cash, Check, Transfer..." disabled={busy||(editingId&&currentBalance<=0)}/></label><label>Payment Date<input type="date" value={paymentDate} onChange={e=>setPaymentDate(e.target.value)} disabled={busy||Boolean(editingId)}/></label></div>
+        {editingId?<button type="button" className="primary" disabled={busy||currentBalance<=0||!paymentAmount} onClick={recordInvoicePayment}>Record Payment</button>:<p className="muted">The initial payment will be recorded automatically when you save this invoice. Leave blank if no payment was received.</p>}
         <p className="muted">Payments are saved in Payments automatically. Partial payments keep the remaining balance open.</p>
       </div>}
       {(isEstimates||isInvoices)&&<div className="wide"><strong>Services and pricing</strong><div className="muted">Describe each service. The total is calculated automatically.</div>{estimateItems.map((item,index)=><div key={index} className="formgrid"><label className="wide">Service description<textarea rows={2} value={item.description} onChange={e=>updateItem(index,"description",e.target.value)} placeholder="Describe the work to be performed"/></label><label>Quantity<input type="number" min="0.01" step="0.01" value={item.quantity} onChange={e=>updateItem(index,"quantity",e.target.value)}/></label><label>Unit price ($)<input type="number" min="0" step="0.01" value={item.price} onChange={e=>updateItem(index,"price",e.target.value)}/></label><label>Line total<input readOnly value={((Number(item.quantity)||0)*(Number(item.price)||0)).toFixed(2)}/></label><button type="button" disabled={estimateItems.length===1} onClick={()=>setEstimateItems(items=>items.filter((_,i)=>i!==index))}>Remove line</button></div>)}<button type="button" onClick={()=>setEstimateItems(items=>[...items,{description:"",quantity:1,price:""}])}>+ Add service</button><p><strong>{isInvoices?"Invoice subtotal":"Estimated total"}: ${(isInvoices?invoiceItemsTotal:estimateTotal).toFixed(2)}</strong></p></div>}
