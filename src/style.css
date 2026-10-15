@@ -367,3 +367,7 @@ iframe[src*="netlify"],iframe[title*="Netlify"],iframe[id*="netlify"],iframe[cla
 .print-sheet.norvin-premium-invoice .ink-stamp-inner strong:has(br){font-size:13px!important}
 .print-sheet.norvin-premium-invoice .ink-stamp-inner span{font-size:8px!important;letter-spacing:0!important;margin-top:3px!important;padding-top:2px!important}
 @media(max-width:540px){.print-sheet.norvin-premium-invoice .invoice-stamp-and-amount{gap:5px!important}.print-sheet.norvin-premium-invoice .invoice-ink-stamp{flex-basis:100px!important;width:100px!important;min-width:100px!important;height:54px!important;min-height:54px!important}.print-sheet.norvin-premium-invoice .invoice-stamp-and-amount .document-amount{flex:0 0 170px!important;width:170px!important;max-width:170px!important}.print-sheet.norvin-premium-invoice .ink-stamp-inner strong{font-size:15px!important}.print-sheet.norvin-premium-invoice .ink-stamp-inner strong:has(br){font-size:11px!important}}
+
+.norvin-premium-invoice .estimate-signature-line{position:relative;height:64px;overflow:visible}
+.norvin-premium-invoice .norvin-handwritten-signature{position:absolute;left:0;bottom:0;width:230px;height:85px;object-fit:contain}
+.norvin-premium-invoice .estimate-approval-seal{margin-left:-35px!important;position:relative;z-index:2}
