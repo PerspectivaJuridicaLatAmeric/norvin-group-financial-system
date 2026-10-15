@@ -104,6 +104,7 @@ export default function CrudModule({ supabase, table, config, initialRows = [], 
     setMessage("");
     setBusy(true);
     try {
+      if(status==="Paid"){const q=await supabase.from("payments").select("amount").eq("invoice_id",row.id);if(q.error)throw q.error;const paid=(q.data||[]).reduce((sum,p)=>sum+Number(p.amount||0),0);if(paid<Number(row.total||row.amount||0)-0.005)throw new Error("Record the actual payment before marking Paid.");}
       const status_date = new Date().toISOString().slice(0,10);
       const { data, error } = await supabase.from("invoices").update({status,status_date}).eq("id",row.id).select("id,status,status_date").single();
       if (error) throw error;
