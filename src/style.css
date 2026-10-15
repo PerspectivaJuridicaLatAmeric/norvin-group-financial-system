@@ -377,3 +377,11 @@ iframe[src*="netlify"],iframe[title*="Netlify"],iframe[id*="netlify"],iframe[cla
 .print-sheet.norvin-premium-invoice .estimate-signature-line{position:relative!important;height:68px!important;overflow:visible!important}
 .print-sheet.norvin-premium-invoice .norvin-handwritten-signature{position:absolute!important;left:0!important;bottom:14px!important;width:235px!important;height:84px!important;object-fit:contain!important;object-position:center bottom!important;max-width:none!important}
 .print-sheet.norvin-premium-invoice .estimate-approval-seal{position:relative!important;margin-left:-52px!important;z-index:3!important}
+
+/* Official document QR authentication: visible in PDFs and print */
+.print-sheet .norvin-verification-block{display:flex;align-items:center;gap:12px;margin:12px 0 8px;padding:8px 12px;border:1px solid #a6ada7;background:#fff;color:#173c32;break-inside:avoid}
+.print-sheet .norvin-verification-block svg{flex:0 0 74px;display:block}
+.print-sheet .norvin-verification-block strong{display:block;font-size:10px;letter-spacing:.6px}
+.print-sheet .norvin-verification-block small{display:block;font-size:9px;line-height:1.45;overflow-wrap:anywhere}
+.print-sheet .norvin-unverified-draft{font-weight:700;font-size:10px;letter-spacing:.5px;border:1px dashed #777;padding:8px;margin:10px 0;text-align:center}
+@media print{.print-sheet .norvin-verification-block{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
