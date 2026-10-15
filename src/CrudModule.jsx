@@ -43,7 +43,7 @@ export default function CrudModule({ supabase, table, config, initialRows = [], 
     try{
       const {data:auth,error:authError}=await supabase.auth.getUser();
       if(authError||!auth?.user?.id)throw new Error("Authentication required.");
-      const {error}=await supabase.from("payments").insert({user_id:auth.user.id,invoice_id:editingId,amount:Math.round(amount*100)/100,payment_date:new Date().toLocaleDateString("en-CA"),method:paymentMethod.trim()||"Not specified",reference:"Invoice payment"});
+      const {error}=await supabase.from("payments").insert({user_id:auth.user.id,invoice_id:editingId,amount:Math.round(amount*100)/100,payment_date:paymentDate||new Date().toISOString().slice(0,10),method:paymentMethod.trim()||"Not specified",reference:"Invoice payment"});
       if(error)throw error;
       const {data:payments,error:readError}=await supabase.from("payments").select("id,invoice_id,amount,payment_date,method").eq("invoice_id",editingId);
       if(readError)throw readError;
@@ -58,7 +58,7 @@ export default function CrudModule({ supabase, table, config, initialRows = [], 
         if(result.error)throw result.error;
         await reload();
       }
-      setPaymentAmount("");setPaymentMethod("");
+      setPaymentAmount("");setPaymentMethod("");setPaymentDate("");
       setMessage("Payment recorded and linked to invoice "+currentInvoice.invoice_number+".");
     }catch(err){setMessage(err.message||"Unable to record payment.");}
     finally{setBusy(false);}
@@ -90,7 +90,8 @@ export default function CrudModule({ supabase, table, config, initialRows = [], 
       const highest=rows.reduce((max,row)=>{const match=String(row.invoice_number||"").match(new RegExp("^INV-"+year+"-([0-9]+)$"));return match?Math.max(max,Number(match[1])):max;},0);
       payload.invoice_number="INV-"+year+"-"+String(highest+1).padStart(5,"0");
     }
-    if(isInvoices&&payload.status==="Paid"&&(!editingId||String(rows.find(r=>r.id===editingId)?.status||"").toLowerCase()!=="paid")){setMessage("Save the invoice first, then use its status selector to confirm receipt of payment.");setBusy(false);return;}\n    if(isInvoices&&!editingId&&paymentAmount!==""){
+    if(isInvoices&&payload.status==="Paid"&&(!editingId||String(rows.find(r=>r.id===editingId)?.status||"").toLowerCase()!=="paid")){if(editingId){setMessage("Use the payment confirmation control to mark this invoice Paid.");setBusy(false);return;}payload.status="Issued";}
+    if(isInvoices&&!editingId&&paymentAmount!==""){
       const upfront=Number(paymentAmount);
       const invoiceTotal=Number(estimateItems.some(item=>item.description.trim()&&item.price!=="")?invoiceItemsTotal:payload.amount)||0;
       if(!Number.isFinite(upfront)||upfront<0||upfront>invoiceTotal+0.005){setMessage("Payment received must be between zero and the invoice total.");setBusy(false);return;}
@@ -116,7 +117,7 @@ export default function CrudModule({ supabase, table, config, initialRows = [], 
     if (error) throw error;
     if(isInvoices&&!editingId&&Number(paymentAmount)>0){
       const upfront=Math.round(Number(paymentAmount)*100)/100;
-      const {error:paymentError}=await supabase.from("payments").insert({user_id:payload.user_id,invoice_id:savedRecord.id,amount:upfront,payment_date:paymentDate||new Date().toLocaleDateString("en-CA"),method:paymentMethod.trim()||"Not specified",reference:"Initial invoice payment"});
+      const {error:paymentError}=await supabase.from("payments").insert({user_id:payload.user_id,invoice_id:savedRecord.id,amount:upfront,payment_date:paymentDate||new Date().toISOString().slice(0,10),method:paymentMethod.trim()||"Not specified",reference:"Initial invoice payment"});
       if(paymentError)throw new Error("Invoice saved, but initial payment was NOT recorded: "+paymentError.message+". Open the invoice to record it; do not create another invoice.");
       const total=Number(payload.total||0);
       if(total>0&&upfront>=total-0.005){
