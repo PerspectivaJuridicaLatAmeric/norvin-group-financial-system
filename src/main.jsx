@@ -152,29 +152,57 @@ function NewPassword({onDone}){
 }
 
 function Dashboard({setSection}){
-  const money=n=>new Intl.NumberFormat("en-US",{style:"currency",currency:"USD",maximumFractionDigits:0}).format(n);
-  const metrics=[
-    ["Total Income",money(0),"Payments received"],
-    ["Total Expenses",money(0),"Operating expenses"],
-    ["Net Profit",money(0),"Income minus expenses"],
-    ["Pending Invoices",money(0),"Open receivables"]
-  ];
-  const recentInvoices=[["INV-001","No invoices yet","—","Pending"],["INV-002","Add your first client","—","Draft"]];
-  const recentProjects=[["Project portfolio","No active projects yet","Ready"],["New project","Create from Projects","Draft"]];
+  const [data,setData]=useState({payments:[],invoices:[],expenses:[],contractor_payments:[],projects:[]});
+  const [error,setError]=useState("");
+  const [loading,setLoading]=useState(true);
+  useEffect(()=>{
+    let active=true;
+    async function loadAll(table){
+      const result=[];
+      for(let offset=0;;offset+=500){
+        const {data:page,error}=await supabase.from(table).select("*").order("id",{ascending:true}).range(offset,offset+499);
+        if(error)throw error;
+        result.push(...(page||[]));
+        if(!page||page.length<500)break;
+      }
+      return result;
+    }
+    (async()=>{
+      setLoading(true);setError("");
+      try{
+        const [payments,invoices,expenses,contractor_payments,projects]=await Promise.all(["payments","invoices","expenses","contractor_payments","projects"].map(loadAll));
+        if(active)setData({payments,invoices,expenses,contractor_payments,projects});
+      }catch(e){if(active)setError(e.message||"Unable to load dashboard data.");}
+      finally{if(active)setLoading(false);}
+    })();
+    return()=>{active=false};
+  },[]);
+  const money=n=>new Intl.NumberFormat("en-US",{style:"currency",currency:"USD",maximumFractionDigits:2}).format(n);
+  const sum=rows=>rows.reduce((n,r)=>n+Number(r.amount||0),0);
+  const income=sum(data.payments),expenses=sum(data.expenses)+sum(data.contractor_payments);
+  const receivedByInvoice=new Map();
+  for(const p of data.payments)receivedByInvoice.set(String(p.invoice_id),(receivedByInvoice.get(String(p.invoice_id))||0)+Number(p.amount||0));
+  const outstanding=data.invoices.filter(i=>String(i.status||"").toLowerCase()!=="cancelled").reduce((n,i)=>n+Math.max(0,Number(i.total??i.amount??0)-(receivedByInvoice.get(String(i.id))||0)),0);
+  const metrics=[["Total Income",money(income),"Payments received"],["Total Expenses",money(expenses),"Expenses and contractor payments"],["Net Profit",money(income-expenses),"Operating balance before payroll and taxes"],["Pending Invoices",money(outstanding),"Open receivables"]];
+  const recentInvoices=[...data.invoices].sort((a,b)=>String(b.created_at||b.issue_date||"").localeCompare(String(a.created_at||a.issue_date||""))).slice(0,5);
+  const recentProjects=[...data.projects].slice(-5).reverse();
   const docs=[["Invoice","Customer billing"],["Estimate","Project proposal"],["Purchase Order","Vendor purchasing"],["Payroll Statement","Employee payroll"],["Expense Report","Business expenses"]];
   return <section className="dashboard-home">
     <div className="dashboard-welcome"><div><div className="eyebrow">NORVIN GROUP LLC</div><h2>Welcome to your Business Dashboard</h2><p>Construction · Electrical · General Services</p></div><BrandLogo/></div>
+    {loading&&<div className="notice">Loading financial data…</div>}
+    {error&&<div className="alert">Dashboard totals unavailable: {error}</div>}
+    {!loading&&!error&&<>
     <div className="metric-grid">{metrics.map(([label,value,desc])=><div className="metric-card" key={label}><span>{label}</span><strong>{value}</strong><small>{desc}</small></div>)}</div>
     <div className="dashboard-visual-grid">
-      <div className="dash-panel"><div className="dash-panel-head"><h3>Income vs Expenses</h3><span>Financial overview</span></div><div className="chart-bars"><div className="chart-line income"><i style={{height:"62%"}}></i><i style={{height:"78%"}}></i><i style={{height:"54%"}}></i><i style={{height:"86%"}}></i><i style={{height:"70%"}}></i><i style={{height:"92%"}}></i></div><div className="chart-line expense"><i style={{height:"38%"}}></i><i style={{height:"45%"}}></i><i style={{height:"33%"}}></i><i style={{height:"52%"}}></i><i style={{height:"41%"}}></i><i style={{height:"48%"}}></i></div></div><div className="chart-legend"><span><b className="legend-income"></b>Income</span><span><b className="legend-expense"></b>Expenses</span></div></div>
-      <div className="dash-panel"><div className="dash-panel-head"><h3>Project Status</h3><span>Current workload</span></div><div className="status-ring"><div><strong>0</strong><span>Projects</span></div></div><div className="status-list"><span><b></b>Active <strong>0</strong></span><span><b></b>Pending <strong>0</strong></span><span><b></b>Completed <strong>0</strong></span></div></div>
+      <div className="dash-panel"><div className="dash-panel-head"><h3>Income vs Expenses</h3><span>Recorded totals</span></div><div className="chart-bars"><div className="chart-line income"><i style={{height:income||expenses?`${Math.max(4,100*income/Math.max(income,expenses))}%`:"0%"}}></i></div><div className="chart-line expense"><i style={{height:income||expenses?`${Math.max(4,100*expenses/Math.max(income,expenses))}%`:"0%"}}></i></div></div><div className="chart-legend"><span><b className="legend-income"></b>Income {money(income)}</span><span><b className="legend-expense"></b>Expenses {money(expenses)}</span></div></div>
+      <div className="dash-panel"><div className="dash-panel-head"><h3>Project Status</h3><span>Current workload</span></div><div className="status-ring"><div><strong>{data.projects.length}</strong><span>Projects</span></div></div><div className="status-list">{["Active","Pending","Completed"].map(status=><span key={status}><b></b>{status} <strong>{data.projects.filter(p=>String(p.status||"").toLowerCase()===status.toLowerCase()).length}</strong></span>)}</div></div>
     </div>
     <div className="dashboard-visual-grid">
-      <div className="dash-panel"><div className="dash-panel-head"><h3>Recent Invoices</h3><button onClick={()=>setSection("invoices")}>View all</button></div><div className="dash-list">{recentInvoices.map((r,i)=><div className="dash-row" key={i}><div><strong>{r[0]}</strong><small>{r[1]}</small></div><span>{r[2]}</span><em>{r[3]}</em></div>)}</div></div>
-      <div className="dash-panel"><div className="dash-panel-head"><h3>Recent Projects</h3><button onClick={()=>setSection("projects")}>View all</button></div><div className="dash-list">{recentProjects.map((r,i)=><div className="dash-row project-row" key={i}><div><strong>{r[0]}</strong><small>{r[1]}</small></div><em>{r[2]}</em></div>)}</div></div>
-    </div>
+      <div className="dash-panel"><div className="dash-panel-head"><h3>Recent Invoices</h3><button onClick={()=>setSection("invoices")}>View all</button></div><div className="dash-list">{recentInvoices.length?recentInvoices.map(r=>{const due=Math.max(0,Number(r.total??r.amount??0)-(receivedByInvoice.get(String(r.id))||0));return <div className="dash-row" key={r.id}><div><strong>{r.invoice_number}</strong><small>{money(Number(r.total??r.amount??0))} total</small></div><span>{money(due)} due</span><em>{String(r.status||"")}</em></div>}):<div className="muted">No invoices yet.</div>}</div></div>
+      <div className="dash-panel"><div className="dash-panel-head"><h3>Recent Projects</h3><button onClick={()=>setSection("projects")}>View all</button></div><div className="dash-list">{recentProjects.length?recentProjects.map(r=><div className="dash-row project-row" key={r.id}><div><strong>{r.name||r.project_name||"Project"}</strong><small>{r.description||""}</small></div><em>{r.status||"—"}</em></div>):<div className="muted">No projects yet.</div>}</div></div>
+    </div></>}
     <div className="documents-strip"><div className="section-heading"><div><div className="eyebrow">Business documents</div><h3>Document Center</h3></div><button onClick={()=>setSection("documents")}>Open Documents →</button></div><div className="document-preview-grid">{docs.map(([name,desc])=><button className="document-preview" key={name} onClick={()=>setSection("documents")}><div className="doc-sheet"><BrandLogo compact/><span>{name}</span><i></i><i></i><i></i></div><strong>{name}</strong><small>{desc}</small></button>)}</div></div>
-  </section>
+  </section>;
 }
 
 function DataModule({title,rows,error,loading}){
