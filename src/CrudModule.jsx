@@ -15,7 +15,8 @@ export default function CrudModule({ supabase, table, config, initialRows = [], 
   const [invoicePayments,setInvoicePayments]=useState([]);
   const [paymentAmount,setPaymentAmount]=useState("");
   const [paymentMethod,setPaymentMethod]=useState("");
-  const [paymentDate,setPaymentDate]=useState("");\n  const [invoicePayments,setInvoicePayments]=useState([]);\n  const [receivedInput,setReceivedInput]=useState("");\n  const [paymentMethod,setPaymentMethod]=useState("");
+  const [paymentDate,setPaymentDate]=useState("");
+  const [receivedInput,setReceivedInput]=useState("");
   const [estimateItems,setEstimateItems]=useState([{description:"",quantity:1,price:""}]);
   const invoiceItemsTotal=estimateItems.reduce((sum,item)=>sum+(Number(item.quantity)||0)*(Number(item.price)||0),0);
   const estimateTotal=estimateItems.reduce((sum,item)=>sum+(Number(item.quantity)||0)*(Number(item.price)||0),0);
@@ -138,7 +139,8 @@ export default function CrudModule({ supabase, table, config, initialRows = [], 
     finally{setBusy(false);}
   }
 
-  function edit(row) {\n    setReceivedInput("");setPaymentMethod("");
+  function edit(row) {
+    setReceivedInput("");setPaymentMethod("");
     setEditingId(row.id);
     if(isInvoices){setPaymentAmount("");setPaymentMethod("");setPaymentDate("");}
     if(isInvoices)setEstimateItems(Array.isArray(row.line_items)&&row.line_items.length?row.line_items:[{description:"",quantity:1,price:""}]);
