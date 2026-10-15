@@ -24,6 +24,7 @@ export default function CrudModule({ supabase, table, config, initialRows = [], 
   const isInvoices=table==="invoices";
   const isPayments=table==="payments";
   useEffect(()=>{if(!isPayments)return;let active=true;supabase.from("invoices").select("id,invoice_number,total,amount,status").limit(500).then(({data})=>{if(active)setInvoiceOptions(data||[])});return()=>{active=false};},[supabase,isPayments]);
+  const invoicePaymentSummary=invoiceOptions.map(inv=>{const received=rows.filter(p=>String(p.invoice_id)===String(inv.id)).reduce((sum,p)=>sum+Number(p.amount||0),0);const total=Number(inv.total??inv.amount??0);return {...inv,received,total,balance:Math.max(0,total-received),paymentState:total>0&&received>=total-0.005?"Paid":received>0?"Partially Paid":"Pending Payment"};});
   const estimateLabel=(key,value)=>{const choices=key==="client_id"?clientOptions:projectOptions;const item=choices.find(x=>String(x.id)===String(value));return item?(key==="client_id"?"CLI-":"PRJ-")+String(key==="client_id"?item.client_sequence:item.project_sequence).padStart(5,"0")+" — "+item.name:(value||"");};
   const projectCode=row=>row.project_sequence!=null?"PRJ-"+String(row.project_sequence).padStart(5,"0"):"Pending assignment";
   const clientCode=row=>row.client_sequence!=null?"CLI-"+String(row.client_sequence).padStart(5,"0"):"Pending assignment";
@@ -160,6 +161,7 @@ export default function CrudModule({ supabase, table, config, initialRows = [], 
         {editingId && <button type="button" onClick={() => {setEditingId(null);setForm(empty)}}>Cancel</button>}
       </div>
     </form>
+    {isPayments&&<div className="wide" style={{margin:"14px 0 20px"}}><strong>Invoice Payment Status</strong><p className="muted">All registered invoices appear here, including unpaid invoices. Pending balances are not counted as received payments.</p><div className="tablewrap"><table><thead><tr><th>Invoice</th><th>Invoice Total</th><th>Payments Received</th><th>Balance Due</th><th>Status</th></tr></thead><tbody>{invoicePaymentSummary.map(inv=><tr key={inv.id}><td>{inv.invoice_number}</td><td>${inv.total.toFixed(2)}</td><td>${inv.received.toFixed(2)}</td><td>${inv.balance.toFixed(2)}</td><td><strong>{inv.paymentState}</strong></td></tr>)}</tbody></table></div></div>}
     {message && <div className="notice">{message}</div>}
     {loadError ? <div className="alert">{loadError}</div> : <div className="tablewrap">
       {!rows.length ? <div className="empty">No records found.</div> : <table><thead><tr>
