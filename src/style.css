@@ -371,3 +371,9 @@ iframe[src*="netlify"],iframe[title*="Netlify"],iframe[id*="netlify"],iframe[cla
 .norvin-premium-invoice .estimate-signature-line{position:relative;height:64px;overflow:visible}
 .norvin-premium-invoice .norvin-handwritten-signature{position:absolute;left:0;bottom:0;width:230px;height:85px;object-fit:contain}
 .norvin-premium-invoice .estimate-approval-seal{margin-left:-35px!important;position:relative;z-index:2}
+
+/* Keep the handwritten signature above the rule, never over representative/date */
+.print-sheet.norvin-premium-invoice .estimate-approval-signature{position:relative!important;flex:0 0 260px!important;width:260px!important;max-width:260px!important;overflow:visible!important}
+.print-sheet.norvin-premium-invoice .estimate-signature-line{position:relative!important;height:68px!important;overflow:visible!important}
+.print-sheet.norvin-premium-invoice .norvin-handwritten-signature{position:absolute!important;left:0!important;bottom:14px!important;width:235px!important;height:84px!important;object-fit:contain!important;object-position:center bottom!important;max-width:none!important}
+.print-sheet.norvin-premium-invoice .estimate-approval-seal{position:relative!important;margin-left:-52px!important;z-index:3!important}
