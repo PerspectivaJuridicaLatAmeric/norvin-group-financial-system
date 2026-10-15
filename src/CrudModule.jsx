@@ -11,7 +11,10 @@ export default function CrudModule({ supabase, table, config, initialRows = [], 
   const [documentAction,setDocumentAction]=useState(null);
   const [clientOptions,setClientOptions]=useState([]);
   const [projectOptions,setProjectOptions]=useState([]);
-  const [invoiceOptions,setInvoiceOptions]=useState([]);\n  const [invoicePayments,setInvoicePayments]=useState([]);\n  const [receivedInput,setReceivedInput]=useState("");\n  const [paymentMethod,setPaymentMethod]=useState("");
+  const [invoiceOptions,setInvoiceOptions]=useState([]);
+  const [invoicePayments,setInvoicePayments]=useState([]);
+  const [paymentAmount,setPaymentAmount]=useState("");
+  const [paymentMethod,setPaymentMethod]=useState("");\n  const [invoicePayments,setInvoicePayments]=useState([]);\n  const [receivedInput,setReceivedInput]=useState("");\n  const [paymentMethod,setPaymentMethod]=useState("");
   const [estimateItems,setEstimateItems]=useState([{description:"",quantity:1,price:""}]);
   const invoiceItemsTotal=estimateItems.reduce((sum,item)=>sum+(Number(item.quantity)||0)*(Number(item.price)||0),0);
   const estimateTotal=estimateItems.reduce((sum,item)=>sum+(Number(item.quantity)||0)*(Number(item.price)||0),0);
@@ -25,6 +28,40 @@ export default function CrudModule({ supabase, table, config, initialRows = [], 
   const isPayments=table==="payments";
   useEffect(()=>{if(!isPayments)return;let active=true;supabase.from("invoices").select("id,invoice_number,total,amount,status").limit(500).then(({data,error})=>{if(active){if(error)setMessage(error.message);else setInvoiceOptions(data||[]);}});return()=>{active=false};},[supabase,isPayments]);
   useEffect(()=>{if(!isInvoices)return;let active=true;supabase.from("payments").select("id,invoice_id,amount,payment_date,method").limit(1000).then(({data,error})=>{if(active){if(error)setMessage(error.message);else setInvoicePayments(data||[]);}});return()=>{active=false};},[supabase,isInvoices,rows]);
+  useEffect(()=>{if(!isInvoices)return;let active=true;supabase.from("payments").select("id,invoice_id,amount,payment_date,method").limit(1000).then(({data,error})=>{if(active){if(error)setMessage(error.message);else setInvoicePayments(data||[]);}});return()=>{active=false};},[supabase,isInvoices]);
+  const currentInvoice=rows.find(r=>String(r.id)===String(editingId));
+  const currentReceived=invoicePayments.filter(p=>String(p.invoice_id)===String(editingId)).reduce((sum,p)=>sum+Number(p.amount||0),0);
+  const currentTotal=Number(currentInvoice?.total??currentInvoice?.amount??0);
+  const currentBalance=Math.max(0,Math.round((currentTotal-currentReceived)*100)/100);
+  async function recordInvoicePayment(){
+    const amount=Number(paymentAmount);
+    if(!editingId||!currentInvoice){setMessage("Save the invoice before recording a payment.");return;}
+    if(!Number.isFinite(amount)||amount<=0||amount>currentBalance+0.005){setMessage("Enter a positive payment no greater than the balance due.");return;}
+    if(busy)return;
+    setBusy(true);setMessage("");
+    try{
+      const {data:auth,error:authError}=await supabase.auth.getUser();
+      if(authError||!auth?.user?.id)throw new Error("Authentication required.");
+      const {error}=await supabase.from("payments").insert({user_id:auth.user.id,invoice_id:editingId,amount:Math.round(amount*100)/100,payment_date:new Date().toLocaleDateString("en-CA"),method:paymentMethod.trim()||"Not specified",reference:"Invoice payment"});
+      if(error)throw error;
+      const {data:payments,error:readError}=await supabase.from("payments").select("id,invoice_id,amount,payment_date,method").eq("invoice_id",editingId);
+      if(readError)throw readError;
+      setInvoicePayments(prev=>[...prev.filter(p=>String(p.invoice_id)!==String(editingId)),...(payments||[])]);
+      const totalReceived=(payments||[]).reduce((sum,p)=>sum+Number(p.amount||0),0);
+      if(totalReceived>=currentTotal-0.005&&currentTotal>0){
+        const result=await supabase.rpc("confirm_invoice_paid",{p_invoice_id:editingId,p_method:"Not specified"});
+        if(result.error)throw result.error;
+        await reload();
+      }else{
+        const result=await supabase.from("invoices").update({status:"Issued"}).eq("id",editingId);
+        if(result.error)throw result.error;
+        await reload();
+      }
+      setPaymentAmount("");setPaymentMethod("");
+      setMessage("Payment recorded and linked to invoice "+currentInvoice.invoice_number+".");
+    }catch(err){setMessage(err.message||"Unable to record payment.");}
+    finally{setBusy(false);}
+  }
   const invoicePaymentSummary=invoiceOptions.map(inv=>{const received=rows.filter(p=>String(p.invoice_id)===String(inv.id)).reduce((sum,p)=>sum+Number(p.amount||0),0);const total=Number(inv.total??inv.amount??0);return {...inv,received,total,balance:Math.max(0,total-received),paymentState:total>0&&received>=total-0.005?"Paid":received>0?"Partially Paid":"Pending Payment"};});
   const estimateLabel=(key,value)=>{const choices=key==="client_id"?clientOptions:projectOptions;const item=choices.find(x=>String(x.id)===String(value));return item?(key==="client_id"?"CLI-":"PRJ-")+String(key==="client_id"?item.client_sequence:item.project_sequence).padStart(5,"0")+" — "+item.name:(value||"");};
   const projectCode=row=>row.project_sequence!=null?"PRJ-"+String(row.project_sequence).padStart(5,"0"):"Pending assignment";
@@ -82,6 +119,7 @@ export default function CrudModule({ supabase, table, config, initialRows = [], 
 
   function edit(row) {\n    setReceivedInput("");setPaymentMethod("");
     setEditingId(row.id);
+    if(isInvoices){setPaymentAmount("");setPaymentMethod("");}
     if(isInvoices)setEstimateItems(Array.isArray(row.line_items)&&row.line_items.length?row.line_items:[{description:"",quantity:1,price:""}]);
     if(isEstimates)setEstimateItems(Array.isArray(row.line_items)&&row.line_items.length?row.line_items:[{description:row.description||"",quantity:1,price:row.amount??""}]);
     setForm(Object.fromEntries(config.fields.map(f => [f.key, f.type === "checkbox" ? Boolean(row[f.key]) : (row[f.key] ?? "")])));
@@ -183,6 +221,13 @@ export default function CrudModule({ supabase, table, config, initialRows = [], 
       {config.fields.filter(field=>!((isEstimates&&["estimate_number","amount"].includes(field.key))||(isInvoices&&field.key==="invoice_number"))).map(field => <label key={field.key}>{field.label}
         {isPayments&&field.key==="invoice_id"?<select value={form.invoice_id||""} onChange={e=>updateField(field,e.target.value)} required><option value="">Select invoice…</option>{invoiceOptions.map(inv=><option key={inv.id} value={inv.id}>{inv.invoice_number} — ${Number(inv.total??inv.amount??0).toFixed(2)}</option>)}</select>:isInvoices&&field.key==="amount"&&estimateItems.some(item=>item.description.trim()&&item.price!=="")?<input type="number" readOnly aria-label="Automatically calculated invoice total" value={invoiceItemsTotal.toFixed(2)}/>:((isEstimates||isInvoices)&&(field.key==="client_id"||field.key==="project_id"))?<select value={form[field.key]} onChange={e=>updateField(field,e.target.value)}><option value="">{field.key==="client_id"?"Select registered client…":"N/A — No linked project"}</option>{(field.key==="client_id"?clientOptions:projectOptions.filter(p=>!form.client_id||!p.client_id||String(p.client_id)===String(form.client_id))).map(item=><option key={item.id} value={item.id}>{estimateLabel(field.key,item.id)}</option>)}</select>:field.type==="select"?<select value={form[field.key]} required={field.required} onChange={e=>updateField(field,e.target.value)}><option value="">Select status…</option>{field.options.map(option=><option key={option.value} value={option.value}>{option.label}</option>)}</select>:<input type={field.type || "text"} required={field.required} min={field.min} step={field.step} {...(field.type === "checkbox" ? {checked:Boolean(form[field.key]),onChange:e=>setForm(v=>({...v,[field.key]:e.target.checked}))} : {value:form[field.key],onChange:e=>setForm(v=>({...v,[field.key]:e.target.value}))})}/>}
       </label>)}
+      {isInvoices&&editingId&&currentInvoice&&<div className="wide" style={{padding:"18px",background:"#f4f7f5",border:"1px solid #dce5df",borderRadius:"12px"}}>
+        <h3>Payment Information</h3>
+        <div className="formgrid"><label>Invoice Total ($)<input readOnly value={currentTotal.toFixed(2)}/></label><label>Payments Received ($)<input readOnly value={currentReceived.toFixed(2)}/></label><label>Balance Due ($)<input readOnly value={currentBalance.toFixed(2)}/></label><label>Payment Status<input readOnly value={currentBalance<=0&&currentTotal>0?"Paid":currentReceived>0?"Partially Paid":"Pending Payment"}/></label></div>
+        <div className="formgrid"><label>New Payment Received ($)<input type="number" min="0.01" max={currentBalance} step="0.01" value={paymentAmount} onChange={e=>setPaymentAmount(e.target.value)} placeholder="Enter amount received" disabled={busy||currentBalance<=0}/></label><label>Payment Method<input value={paymentMethod} onChange={e=>setPaymentMethod(e.target.value)} placeholder="Cash, Check, Transfer..." disabled={busy||currentBalance<=0}/></label></div>
+        <button type="button" className="primary" disabled={busy||currentBalance<=0||!paymentAmount} onClick={recordInvoicePayment}>Record Payment</button>
+        <p className="muted">Payments are saved in Payments automatically. Partial payments keep the remaining balance open.</p>
+      </div>}
       {(isEstimates||isInvoices)&&<div className="wide"><strong>Services and pricing</strong><div className="muted">Describe each service. The total is calculated automatically.</div>{estimateItems.map((item,index)=><div key={index} className="formgrid"><label className="wide">Service description<textarea rows={2} value={item.description} onChange={e=>updateItem(index,"description",e.target.value)} placeholder="Describe the work to be performed"/></label><label>Quantity<input type="number" min="0.01" step="0.01" value={item.quantity} onChange={e=>updateItem(index,"quantity",e.target.value)}/></label><label>Unit price ($)<input type="number" min="0" step="0.01" value={item.price} onChange={e=>updateItem(index,"price",e.target.value)}/></label><label>Line total<input readOnly value={((Number(item.quantity)||0)*(Number(item.price)||0)).toFixed(2)}/></label><button type="button" disabled={estimateItems.length===1} onClick={()=>setEstimateItems(items=>items.filter((_,i)=>i!==index))}>Remove line</button></div>)}<button type="button" onClick={()=>setEstimateItems(items=>[...items,{description:"",quantity:1,price:""}])}>+ Add service</button><p><strong>{isInvoices?"Invoice subtotal":"Estimated total"}: ${(isInvoices?invoiceItemsTotal:estimateTotal).toFixed(2)}</strong></p></div>}
       {isInvoices&&editingId&&(()=>{const invoice=rows.find(r=>String(r.id)===String(editingId));if(!invoice)return null;const paid=invoicePayments.filter(p=>String(p.invoice_id)===String(editingId)).reduce((sum,p)=>sum+Number(p.amount||0),0);const total=Number(invoice.total??invoice.amount??0);const due=Math.max(0,total-paid);return <div className="wide" style={{padding:"16px",border:"1px solid #dce5df",borderRadius:"12px",background:"#f7faf8"}}><strong>Record Customer Payment</strong><p>Invoice Total: <strong>$ {total.toFixed(2)}</strong> · Payments Received: <strong>$ {paid.toFixed(2)}</strong> · Balance Due: <strong>$ {due.toFixed(2)}</strong></p><div className="formgrid"><label>Payment Received ($)<input type="number" min="0.01" max={due.toFixed(2)} step="0.01" value={receivedInput} onChange={e=>setReceivedInput(e.target.value)} placeholder="Enter amount received"/></label><label>Payment Method<input value={paymentMethod} onChange={e=>setPaymentMethod(e.target.value)} placeholder="Cash, Check, Bank Transfer…"/></label><div className="formactions"><button type="button" className="primary" disabled={busy||due<=0} onClick={recordInvoicePayment}>Record Payment</button></div></div><small>Only record money actually received. Each payment is saved to Payments and linked to this invoice.</small></div>})()}
       <div className="formactions"><button className="primary" disabled={busy}>{busy?"Saving…":editingId ? "Update" : "Add"}</button>
