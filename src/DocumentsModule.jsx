@@ -18,7 +18,8 @@ export default function DocumentsModule({supabase,initialType="estimate",initial
   const [issueDate,setIssueDate]=React.useState(new Date().toISOString().slice(0,10));
   const [paymentInstructions,setPaymentInstructions]=React.useState("");
   const [notes,setNotes]=React.useState("");
-  const [paymentStatus,setPaymentStatus]=React.useState("pending");
+  const [paymentStatus,setPaymentStatus]=React.useState("Pending Payment");
+  const [statusDate,setStatusDate]=React.useState(new Date().toISOString().slice(0,10));
   const [contact,setContact]=React.useState("");
   const [terms,setTerms]=React.useState("Payment terms and project conditions as agreed in writing.");
   const [reference,setReference]=React.useState("");
@@ -56,7 +57,7 @@ export default function DocumentsModule({supabase,initialType="estimate",initial
         if(!active)return;
         if(cr.error)throw cr.error;if(sr.error)throw sr.error;if(pr.error)throw pr.error;
         setClients(cr.data||[]);setProjects(jr.data||[]);setSourceRows(sr.data||[]);setPayments(pr.data||[]);
-        if(initialRecordId){const rec=(sr.data||[]).find(x=>String(x.id)===String(initialRecordId));if(rec){const client=(cr.data||[]).find(x=>String(x.id)===String(rec.client_id));setSourceId(String(rec.id));setNumber(rec.invoice_number||rec.estimate_number||"");setName(client?.name||"");setAddress(client?.address||"");setAmount(rec.amount??rec.total??"");setIssueDate(String(rec.issue_date||rec.created_at||new Date().toISOString().slice(0,10)).slice(0,10));setPaymentInstructions(rec.payment_instructions||"");setTerms(rec.terms||"");setTaxRate(String(rec.tax_rate??0));setDate(String(rec.due_date||rec.valid_until||new Date().toISOString().slice(0,10)).slice(0,10));setDescription(rec.description||rec.notes||"");setNotes(rec.notes||"");setItems(Array.isArray(rec.line_items)?rec.line_items.map(item=>({description:item.description,qty:Number(item.quantity??item.qty)||1,rate:Number(item.price??item.rate)||0})):[]);setRate("");setStatus(rec.status||"Draft");setReference((jr.data||[]).find(p=>p.id===rec.project_id)?.name||"N/A");if(autoPrint)window.setTimeout(()=>window.print(),350);}}
+        if(initialRecordId){const rec=(sr.data||[]).find(x=>String(x.id)===String(initialRecordId));if(rec){const client=(cr.data||[]).find(x=>String(x.id)===String(rec.client_id));setSourceId(String(rec.id));setNumber(rec.invoice_number||rec.estimate_number||"");setName(client?.name||"");setAddress(client?.address||"");setAmount(rec.amount??rec.total??"");setIssueDate(String(rec.issue_date||rec.created_at||new Date().toISOString().slice(0,10)).slice(0,10));setPaymentInstructions(rec.payment_instructions||"");setTerms(rec.terms||"");setTaxRate(String(rec.tax_rate??0));setDate(String(rec.due_date||rec.valid_until||new Date().toISOString().slice(0,10)).slice(0,10));setDescription(rec.description||rec.notes||"");setNotes(rec.notes||"");setItems(Array.isArray(rec.line_items)?rec.line_items.map(item=>({description:item.description,qty:Number(item.quantity??item.qty)||1,rate:Number(item.price??item.rate)||0})):[]);setRate("");setStatus(rec.status||"Draft");if(type==="invoice"){setPaymentStatus(/^(paid|cancelado|cancelled)$/i.test(String(rec.status||""))?"Paid":"Pending Payment");setStatusDate(rec.status_date||String(rec.issue_date||rec.created_at||new Date().toISOString()).slice(0,10));}setReference((jr.data||[]).find(p=>p.id===rec.project_id)?.name||"N/A");if(autoPrint)window.setTimeout(()=>window.print(),350);}}
       }catch(e){if(active)setError(e.message||"Unable to load saved records.");}
       finally{if(active)setSourceLoading(false);}
     } load(); return()=>{active=false};
@@ -66,7 +67,7 @@ export default function DocumentsModule({supabase,initialType="estimate",initial
     const r=sourceRows.find(x=>String(x.id)===String(id)); if(!r)return;
     const client=clients.find(x=>String(x.id)===String(r.client_id));
     const project=projects.find(x=>String(x.id)===String(r.project_id));
-    if(type==="invoice"){setPaymentStatus(String(r.status||"").toLowerCase().includes("cancel")?"cancelled":"pending");setNumber(r.invoice_number||"");setName(client?.name||"");setAddress(client?.address||"");setAmount(r.amount??r.total??"");setIssueDate((r.issue_date||r.created_at||new Date().toISOString().slice(0,10)).slice(0,10));setTaxRate(String(r.tax_rate??0));setTerms(r.terms||"");setPaymentInstructions(r.payment_instructions||"");setItems(Array.isArray(r.line_items)?r.line_items.map(item=>({description:item.description,qty:Number(item.quantity)||1,rate:Number(item.price)||0})):[]);setDate((r.due_date||new Date().toISOString().slice(0,10)).slice(0,10));setDescription(r.description||r.notes||project?.name||"");setRate("");setQty("1");setNotes(r.notes||"");}
+    if(type==="invoice"){setPaymentStatus(/^(paid|cancelado|cancelled)$/i.test(String(r.status||""))?"Paid":"Pending Payment");setStatusDate(r.status_date||String(r.issue_date||r.created_at||new Date().toISOString()).slice(0,10));setNumber(r.invoice_number||"");setName(client?.name||"");setAddress(client?.address||"");setAmount(r.amount??r.total??"");setIssueDate((r.issue_date||r.created_at||new Date().toISOString().slice(0,10)).slice(0,10));setTaxRate(String(r.tax_rate??0));setTerms(r.terms||"");setPaymentInstructions(r.payment_instructions||"");setItems(Array.isArray(r.line_items)?r.line_items.map(item=>({description:item.description,qty:Number(item.quantity)||1,rate:Number(item.price)||0})):[]);setDate((r.due_date||new Date().toISOString().slice(0,10)).slice(0,10));setDescription(r.description||r.notes||project?.name||"");setRate("");setQty("1");setNotes(r.notes||"");}
     if(type==="estimate"){setNumber(r.estimate_number||"");setName(client?.name||"");setAddress(client?.address||"");setAmount(r.amount??"");setDate((r.valid_until||new Date().toISOString().slice(0,10)).slice(0,10));setDescription("");setItems(Array.isArray(r.line_items)?r.line_items.map(item=>({description:item.description,qty:Number(item.quantity)||1,rate:Number(item.price)||0})):[]);setRate("");setQty("1");setNotes(r.notes||"");setStatus(r.status||"Draft");setReference(project?.name||"N/A");}
     if(type==="expense-report"){setNumber(r.expense_number||String(r.id).slice(0,8));setName(r.vendor||"");setAmount(r.amount??"");setDate((r.expense_date||new Date().toISOString().slice(0,10)).slice(0,10));setDescription(r.description||"");}
   }
@@ -86,7 +87,7 @@ export default function DocumentsModule({supabase,initialType="estimate",initial
   const invoicePayments=type==="invoice"&&selectedSource?payments.filter(p=>String(p.invoice_id)===String(selectedSource.id)): [];
   const paidTotal=invoicePayments.reduce((s,p)=>s+(Number(p.amount)||0),0);
   const balanceDue=Math.max(0,displayAmount-paidTotal);
-  const resolvedPaymentStatus=type==="invoice"&&selectedSource?(String(selectedSource.status||"").toLowerCase().includes("cancel")?"cancelled":displayAmount>0&&paidTotal>=displayAmount-0.005?"paid":paidTotal>0?"partial":"pending"):"pending";
+  const resolvedPaymentStatus=paymentStatus==="Paid"?"paid":"pending";
   const validAmount=amount!==""&&Number.isFinite(Number(amount))&&Number(amount)>=0;
   async function saveDocument(){
     if(!supabase)return;
@@ -97,7 +98,7 @@ export default function DocumentsModule({supabase,initialType="estimate",initial
     setSaving(true);setError("");setSavedMessage("");
     try{
       let payload={amount:displayAmount};
-      if(type==="invoice")payload={...payload,invoice_number:documentNumber,issue_date:issueDate,due_date:date,description,notes,terms,payment_instructions:paymentInstructions,tax_rate:Number(taxRate)||0,line_items:[...items,...(description.trim()&&currentLine!==null?[{description,qty:Number(qty),rate:Number(rate)}]:[])].map(item=>({description:item.description,quantity:item.qty,price:item.rate})),total:displayAmount};
+      if(type==="invoice")payload={...payload,invoice_number:documentNumber,issue_date:issueDate,due_date:date,description,notes,terms,payment_instructions:paymentInstructions,tax_rate:Number(taxRate)||0,line_items:[...items,...(description.trim()&&currentLine!==null?[{description,qty:Number(qty),rate:Number(rate)}]:[])].map(item=>({description:item.description,quantity:item.qty,price:item.rate})),total:displayAmount,status:paymentStatus,status_date:statusDate};
       if(type==="estimate")payload={...payload,estimate_number:documentNumber,valid_until:date,description,notes};
       if(type==="expense-report")payload={...payload,expense_date:date,vendor:name,description:description||notes};
       if(!sourceId){
@@ -169,9 +170,9 @@ export default function DocumentsModule({supabase,initialType="estimate",initial
       {type==="invoice"&&<label>Issue date<input type="date" value={issueDate} onChange={e=>setIssueDate(e.target.value)}/></label>}
       <label>{type==="invoice"?"Due date":"Date"}<input type="date" value={date} onChange={e=>setDate(e.target.value)}/></label>
       <label>Reference / Project<input value={reference} onChange={e=>setReference(e.target.value)} placeholder="Project or work order reference"/></label>
-      <label>Document status<select value={status} onChange={e=>setStatus(e.target.value)}><option>Draft</option><option>Issued</option><option>Approved</option><option>Paid</option></select></label>
+      {type==="invoice"?<><label>Payment status<select value={paymentStatus} onChange={e=>{setPaymentStatus(e.target.value);setStatusDate(new Date().toISOString().slice(0,10));}}><option value="Pending Payment">Pending Payment</option><option value="Paid">Paid</option></select></label><label>Status date<input type="date" value={statusDate} onChange={e=>setStatusDate(e.target.value)}/></label></>:<label>Document status<select value={status} onChange={e=>setStatus(e.target.value)}><option>Draft</option><option>Issued</option><option>Approved</option><option>Paid</option></select></label>}
       <label className="wide">Terms / Conditions<textarea rows="2" value={terms} onChange={e=>setTerms(e.target.value)}/></label>
-      {type==="invoice"&&<div className="notice wide">Payment status: {resolvedPaymentStatus==="paid"?"PAID":resolvedPaymentStatus==="partial"?"PARTIALLY PAID":resolvedPaymentStatus==="cancelled"?"CANCELLED":"PENDING PAYMENT"}. {selectedSource?"Calculated from registered invoice payments.":"Register the invoice and its payments to update this status automatically."}</div>}
+      {type==="invoice"&&<div className="notice wide">The invoice stamp follows the selected status. Payments received and balance due reflect actual payment records only.</div>}
       <label>Project / Reference<input value={reference} onChange={e=>setReference(e.target.value)} placeholder="Project or purchase reference"/></label>
       {type==="invoice"&&<label className="wide">Payment instructions (verified company details only)<textarea rows="2" value={paymentInstructions} onChange={e=>setPaymentInstructions(e.target.value)} placeholder="Enter verified payment instructions; no sample bank account is printed"/></label>}
       <label>Business contact<input value={contact} onChange={e=>setContact(e.target.value)} placeholder="Company phone or email"/></label>
@@ -192,7 +193,7 @@ export default function DocumentsModule({supabase,initialType="estimate",initial
         <img className="document-logo" src="/norvin-logo-web.jpg" alt="NORVIN GROUP LLC"/>
         <div className="document-title"><h2>{label}</h2>{type==="estimate"&&<small className="estimate-sector-line">RESIDENTIAL  |  COMMERCIAL  |  INDUSTRIAL</small>}</div>
       </header>
-      {false&&type==="invoice"&&<div className={"invoice-stamp stamp-"+resolvedPaymentStatus} aria-label={"Invoice status: "+resolvedPaymentStatus}>{resolvedPaymentStatus==="paid"?"PAID":resolvedPaymentStatus==="partial"?"PARTIALLY PAID":resolvedPaymentStatus==="cancelled"?"CANCELLED":"PENDING PAYMENT"}</div>}
+      
       <div className="document-meta">
         <div><small>DOCUMENT #</small><strong>{documentNumber||"—"}</strong></div>
         <div><small>{type==="invoice"?"ISSUED":"DATE"}</small><strong>{type==="invoice"?issueDate:date}</strong></div>
@@ -204,7 +205,7 @@ export default function DocumentsModule({supabase,initialType="estimate",initial
       {showLineItems&&<div className="document-items"><div className="item-head"><span>Description</span><span>Qty</span><span>Rate</span><span>Amount</span></div>{[...items,...(description.trim()&&currentLine!==null?[{description,qty:Number(qty),rate:Number(rate)}]:[])].map((item,i)=><div className="item-row" key={i}><strong>{item.description}</strong><span>{item.qty}</span><span>{new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"}).format(item.rate)}</span><strong>{new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"}).format(item.qty*item.rate)}</strong></div>)}{items.length===0&&currentLine===null&&<div className="item-row"><strong>{description||"Service / project work"}</strong><span>—</span><span>—</span><strong>—</strong></div>}</div>}
       {showLineItems&&lineTotal!==null&&<div className="document-totals"><div><span>Subtotal</span><strong>{new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"}).format(lineTotal)}</strong></div><div><span>Tax ({taxRate||0}%)</span><strong>{new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"}).format(salesTax)}</strong></div></div>}
       {type==="invoice"&&<div className="invoice-summary-line"><span>Payments received</span><strong>{new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"}).format(paidTotal)}</strong></div>}
-      <div className="document-amount"><span>{type==="invoice"?"BALANCE DUE":amountLabel}</span><strong>{new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"}).format(type==="invoice"?balanceDue:displayAmount)}</strong></div>
+      <div className={type==="invoice"?"invoice-stamp-and-amount":""}>{type==="invoice"&&<div className="invoice-ink-stamp" aria-label={"Invoice marked "+paymentStatus+" on "+statusDate}><div className="ink-stamp-inner"><strong>{resolvedPaymentStatus==="paid"?"PAID":<>PENDING<br/>PAYMENT</>}</strong><span>{statusDate?new Date(statusDate+"T12:00:00").toLocaleDateString("en-US",{month:"short",day:"2-digit",year:"numeric"}).toUpperCase():"DATE NOT SET"}</span></div></div>}<div className="document-amount"><span>{type==="invoice"?"BALANCE DUE":amountLabel}</span><strong>{new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"}).format(type==="invoice"?balanceDue:displayAmount)}</strong></div></div>
       {false&&type==="invoice"&&sourceId&&<div className="invoice-balance"><div><span>Payments Received</span><strong>{new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"}).format(paidTotal)}</strong></div><div><span>Balance Due</span><strong>{new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"}).format(balanceDue)}</strong></div></div>}
       {notes.trim()&&<div className="document-notes"><strong>Notes / Description</strong><p>{notes}</p></div>}
       {type==="invoice"&&paymentInstructions.trim()&&<div className="document-terms"><strong>PAYMENT INFORMATION</strong><p>{paymentInstructions}</p></div>}
