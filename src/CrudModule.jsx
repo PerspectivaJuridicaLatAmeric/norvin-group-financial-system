@@ -99,6 +99,22 @@ export default function CrudModule({ supabase, table, config, initialRows = [], 
     }
   }
 
+  async function changeInvoiceStatus(row, status) {
+    if (busy || status === row.status) return;
+    setMessage("");
+    setBusy(true);
+    try {
+      const status_date = new Date().toISOString().slice(0,10);
+      const { data, error } = await supabase.from("invoices").update({status,status_date}).eq("id",row.id).select("id,status,status_date").single();
+      if (error) throw error;
+      if (!data || data.status !== status) throw new Error("Invoice status could not be confirmed.");
+      setRows(current=>current.map(item=>item.id===row.id?{...item,status:data.status,status_date:data.status_date}:item));
+      setMessage("Invoice payment stamp updated. Open the invoice to review.");
+    } catch(err) {
+      setMessage(err.message||"Unable to update invoice status.");
+    } finally {setBusy(false);}
+  }
+
   async function remove(id) {
     const row=rows.find(r=>String(r.id)===String(id));
     const ref=row?.invoice_number||row?.estimate_number||String(id);
@@ -134,7 +150,7 @@ export default function CrudModule({ supabase, table, config, initialRows = [], 
       {!rows.length ? <div className="empty">No records found.</div> : <table><thead><tr>
         {isClients&&<th>Client #</th>}{isProjects&&<th>Project #</th>}{config.fields.map(f => <th key={f.key}>{f.label}</th>)}<th>Actions</th>
       </tr></thead><tbody>{rows.map(row => <tr key={row.id}>
-        {isClients&&<td><strong>{clientCode(row)}</strong></td>}{isProjects&&<td><strong>{projectCode(row)}</strong></td>}{config.fields.map(f => <td key={f.key}>{isProjects&&f.key==="status"?<select aria-label={`Status for ${projectCode(row)}`} value={row.status||""} disabled={busy} onChange={e=>changeProjectStatus(row,e.target.value)}><option value="" disabled>Select status…</option>{f.options.map(option=><option key={option.value} value={option.value}>{option.label}</option>)}</select>:(isEstimates||isInvoices)&&(f.key==="client_id"||f.key==="project_id")?estimateLabel(f.key,row[f.key]):f.type==="select"?(f.options.find(option=>option.value===row[f.key])?.label||String(row[f.key]??"")):String(row[f.key] ?? "")}</td>)}
+        {isClients&&<td><strong>{clientCode(row)}</strong></td>}{isProjects&&<td><strong>{projectCode(row)}</strong></td>}{config.fields.map(f => <td key={f.key}>{isInvoices&&f.key==="status"?<select aria-label={"Payment status for "+(row.invoice_number||row.id)} value={/^(paid|cancelled|cancelado)$/i.test(String(row.status||""))?"Paid":"Pending Payment"} disabled={busy} onChange={e=>changeInvoiceStatus(row,e.target.value)}><option value="Pending Payment">Pending Payment</option><option value="Paid">Paid</option></select>:isProjects&&f.key==="status"?<select aria-label={`Status for ${projectCode(row)}`} value={row.status||""} disabled={busy} onChange={e=>changeProjectStatus(row,e.target.value)}><option value="" disabled>Select status…</option>{f.options.map(option=><option key={option.value} value={option.value}>{option.label}</option>)}</select>:(isEstimates||isInvoices)&&(f.key==="client_id"||f.key==="project_id")?estimateLabel(f.key,row[f.key]):f.type==="select"?(f.options.find(option=>option.value===row[f.key])?.label||String(row[f.key]??"")):String(row[f.key] ?? "")}</td>)}
         <td>{isFinancialDocument&&<><button type="button" onClick={()=>setDocumentAction({id:row.id,print:false})}>View</button> <button type="button" onClick={()=>setDocumentAction({id:row.id,print:true})}>Print</button> </>}{isFinancialDocument&&<button type="button" onClick={()=>setDocumentAction({id:row.id,print:false,email:true})}>Send Email</button>}<button type="button" disabled={busy} onClick={() => edit(row)}>Edit</button> <button type="button" disabled={busy} onClick={() => remove(row.id)}>Delete</button></td>
       </tr>)}</tbody></table>}
     </div>}
